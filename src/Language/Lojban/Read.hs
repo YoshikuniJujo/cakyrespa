@@ -20,11 +20,13 @@ data Lojban
 	| Vocative String
 	| Free [Free]
 	| ParseError String
+	| NotImplemented String
 	deriving (Show, Eq)
 
 data Selbri
 	= Brivla String
 	| Linkargs Selbri Sumti
+	| NotImplementedSelbri String
 	deriving (Show, Eq)
 
 data Sumti
@@ -35,15 +37,18 @@ data Sumti
 	| LI Mex
 	| KU
 	| SFIhO Selbri Sumti
+	| NotImplementedSumti String
 	deriving (Show, Eq)
 
 data RelativeClause
 	= POI Lojban
 	| Debug String
+	| NotImplementedRelativeClause String
 	deriving (Show, Eq)
 
 data Mex
 	= Number Double
+	| NotImplementedMex String
 	deriving (Show, Eq)
 
 data Tag
@@ -51,6 +56,7 @@ data Tag
 	| FIhO Selbri
 	| BAI String
 	| Time [String]
+	| NotImplementedTag String
 	deriving (Show, Eq)
 
 readLojban :: String -> Lojban
@@ -67,7 +73,7 @@ process (TermsBridiTail ss _ _ (SelbriTailTerms selbri ts _ _)) =
 process (TermsBridiTail ss _ _ (P.Selbri selbri)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss []
 process (P.Selbri selbri) = Bridi (readSelbri selbri) []
-process t = error $ "process: " ++ show t
+process t = NotImplemented $ "process: " ++ show t
 
 processTagSumti :: [P.Sumti] -> [P.Sumti] -> [(Tag, Sumti)]
 processTagSumti s t = let
@@ -89,11 +95,11 @@ readTag :: P.Tag -> (Maybe Int, Tag)
 readTag (P.FA (_, f, _) _) = let n = fromJust $ lookup f faList in (Just n, FA n)
 readTag (P.BAI _ _ (_, b, _) _ _) = (Nothing, BAI b)
 readTag (P.Time _ _ _ ts) = (Nothing, Time $ map readTime ts)
-readTag t = error $ "readTag: " ++ show t
+readTag t = (Nothing, NotImplementedTag $ "readTag: " ++ show t)
 
 readTime ::  IntervalProperty -> String
 readTime (ZAhO (_, z, _) _) = z
-readTime ip = error $ "readTime: " ++ show ip
+readTime ip = "readTime: " ++ show ip
 
 faList :: [(String, Int)]
 faList = [
@@ -112,11 +118,11 @@ readSumti (P.LI _ _ m _ _) = LI $ readMex m
 readSumti (P.KU _ _) = KU
 readSumti (TagSumti (P.FIhO (_, "fi'o", _) _ selbri _ _) sumti) =
 	SFIhO (readSelbri selbri) (readSumti sumti)
-readSumti s = error $ "readSumti: " ++ show s
+readSumti s = NotImplementedSumti $ "readSumti: " ++ show s
 
 readMex :: Operand -> Mex
 readMex (P.Number n _ _) = readNumber n
-readMex o = error $ "readMex: " ++ show o
+readMex o = NotImplementedMex $ "readMex: " ++ show o
 
 readNumber :: [Clause] -> Mex
 readNumber = Number . paToInt . map (\(_, p, _) -> p)
@@ -134,20 +140,26 @@ paToInt :: [String] -> Double
 paToInt = pti . reverse . processKIhO
 	where
 	pti [] = 0
-	pti (p : rest) = fromJust (lookup p paList) + 10 * pti rest
+	pti (p : rest) = fromJust (lookup' p paList) + 10 * pti rest
 
-paList :: [(String, Double)]
+lookup' :: Eq a => a -> [([a], b)] -> Maybe b
+lookup' _ [] = Nothing
+lookup' x ((xs, y) : ys)
+	| x `elem` xs = Just y
+	| otherwise = lookup' x ys
+
+paList :: [([String], Double)]
 paList = [
-	("no", 0),
-	("pa", 1),
-	("re", 2),
-	("ci", 3),
-	("vo", 4),
-	("mu", 5),
-	("xa", 6),
-	("ze", 7),
-	("bi", 8),
-	("so", 9)
+	(["no", "0"], 0),
+	(["pa", "1"], 1),
+	(["re", "2"], 2),
+	(["ci", "3"], 3),
+	(["vo", "4"], 4),
+	(["mu", "5"], 5),
+	(["xa", "6"], 6),
+	(["ze", "7"], 7),
+	(["bi", "8"], 8),
+	(["so", "9"], 9)
  ]
 
 readSumtiTail :: SumtiTail -> (Selbri, Maybe RelativeClause)
@@ -155,7 +167,7 @@ readSumtiTail (SelbriRelativeClauses s Nothing) =
 	(readSelbri s, Nothing)
 readSumtiTail (SelbriRelativeClauses s (Just r)) =
 	(readSelbri s, Just $ readRelativeClauses r)
-readSumtiTail st = error $ "readSumtiTail: " ++ show st
+readSumtiTail st = (NotImplementedSelbri $ "readSumtiTail: " ++ show st, Nothing)
 
 readRelativeClauses :: P.RelativeClause -> RelativeClause
 readRelativeClauses (NOI (_, "poi", _) _ bridi _ _) =
@@ -166,7 +178,7 @@ readSelbri :: P.Selbri -> Selbri
 readSelbri (P.Brivla (_, b, _) _) = Brivla $ map toLower b
 readSelbri (P.Linkargs selbri (BE (_, "be", _) _ sumti _ _ _)) =
 	Linkargs (readSelbri selbri) (readSumti sumti)
-readSelbri s = error $ "readSelbri: " ++ show s
+readSelbri s = NotImplementedSelbri $ "readSelbri: " ++ show s
 	
 next :: Int -> [Int] -> Int
 next n e
