@@ -45,13 +45,21 @@ readPilno s = do
 	KOhA "ko" <- lookup (FA 1) s
 	selpli <- lookup (FA 2) s
 	case selpli of
-		LO (Brivla "penbi") (Just (POI (Brivla skari))) -> do
+		LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
+			(FA 1, LI (Number size))]))) -> return $ PEBYCISNI size
+		LO (Linkargs (Brivla "penbi") (SFIhO (Brivla "cisni") (LI
+			(Number size)))) _ -> return $ PEBYCISNI size
+		LO (Brivla "penbi") (Just (POI (Bridi (Brivla skari) []))) -> do
 			(r, g, b) <- lookup skari skaste
 			return $ PEBYSKA r g b
 		LO (Linkargs (Brivla "penbi") (LO (Brivla skari) _)) _ -> do
 			(r, g, b) <- lookup skari skaste
 			return $ PEBYSKA r g b
-		LO (Brivla "burcu") (Just (POI (Brivla skari))) -> do
+		LO (Brivla "burcu") (Just (POI (Bridi (Brivla skari) []))) -> do
+			(r, g, b) <- lookup skari skaste
+			return $ BURSKA r g b
+		LO (Linkargs (Brivla "burcu") (SFIhO (Brivla "skari") (LO
+			(Brivla skari) _))) _ -> do
 			(r, g, b) <- lookup skari skaste
 			return $ BURSKA r g b
 		_ -> return $ UnknownSelpli selpli
@@ -90,6 +98,7 @@ readCarna s = do
 data Command
 	= CRAKLA Double | RIXYKLA Double
 	| ZUNLE Double | PRITU Double
+	| PEBYCISNI Double
 	| PEBYSKA Int Int Int
 	| BURSKA Int Int Int
 	| COhACLUGAU
@@ -105,6 +114,7 @@ processInput _ t (CRAKLA d) = forward t d >> return True
 processInput _ t (RIXYKLA d) = backward t d >> return True
 processInput _ t (ZUNLE d) = left t d >> return True
 processInput _ t (PRITU d) = right t d >> return True
+processInput _ t (PEBYCISNI s) = pensize t s >> return True
 processInput _ t (PEBYSKA r g b) = pencolor t (r, g, b) >> return True
 processInput _ t (BURSKA r g b) = fillcolor t (r, g, b) >> return True
 processInput _ t COhACLUGAU = beginfill t >> return True

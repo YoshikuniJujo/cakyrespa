@@ -10,7 +10,7 @@ module Language.Lojban.Read (
 
 import Language.Lojban.Parser hiding (
 	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
-	Time, KU, Linkargs)
+	Time, KU, Linkargs, FIhO)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
 
@@ -23,7 +23,7 @@ data Lojban
 	| Vocative String
 	| Free [Free]
 	| ParseError String
-	deriving Show
+	deriving (Show, Eq)
 
 data Selbri
 	= Brivla String
@@ -37,10 +37,11 @@ data Sumti
 	| LO Selbri (Maybe RelativeClause)
 	| LI Mex
 	| KU
+	| SFIhO Selbri Sumti
 	deriving (Show, Eq)
 
 data RelativeClause
-	= POI Selbri
+	= POI Lojban
 	| Debug String
 	deriving (Show, Eq)
 
@@ -91,7 +92,7 @@ readTag :: P.Tag -> (Maybe Int, Tag)
 readTag (P.FA (_, f, _) _) = let n = fromJust $ lookup f faList in (Just n, FA n)
 readTag (P.BAI _ _ (_, b, _) _ _) = (Nothing, BAI b)
 readTag (P.Time _ _ _ ts) = (Nothing, Time $ map readTime ts)
-readTag t = error $ show t
+readTag t = error $ "readTag: " ++ show t
 
 readTime ::  IntervalProperty -> String
 readTime (ZAhO (_, z, _) _) = z
@@ -111,7 +112,9 @@ readSumti (LALE (_, "lo", _) _ st _ _) = LO selbri relative
 	where (selbri, relative) = readSumtiTail st
 readSumti (P.LI _ _ m _ _) = LI $ readMex m
 readSumti (P.KU _ _) = KU
-readSumti s = error $ show s
+readSumti (TagSumti (P.FIhO (_, "fi'o", _) _ selbri _ _) sumti) =
+	SFIhO (readSelbri selbri) (readSumti sumti)
+readSumti s = error $ "readSumti: " ++ show s
 
 readMex :: Operand -> Mex
 readMex (P.Number n _ _) = readNumber n
@@ -145,8 +148,8 @@ readSumtiTail (SelbriRelativeClauses s (Just r)) =
 	(readSelbri s, Just $ readRelativeClauses r)
 
 readRelativeClauses :: P.RelativeClause -> RelativeClause
-readRelativeClauses (NOI (_, "poi", _) _ (P.Selbri selbri) _ _) =
-	POI $ readSelbri selbri
+readRelativeClauses (NOI (_, "poi", _) _ bridi _ _) =
+	POI $ process bridi
 readRelativeClauses r = Debug $  show r
 
 readSelbri :: P.Selbri -> Selbri
