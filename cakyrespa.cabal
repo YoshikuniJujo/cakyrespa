@@ -16,5 +16,5 @@ executable	cakyrespa
     hs-source-dirs:	src
     main-is:		cakyrespa.hs
     other-modules:	Language.Lojban.Read
-    build-depends:	base >3 && <5, lojbanParser, gluturtle, GLUT
+    build-depends:	base >3 && <5, lojbanParser, gluturtle >= 0.0.7, GLUT
     ghc-options:	-Wall

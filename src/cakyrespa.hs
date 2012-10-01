@@ -13,7 +13,7 @@ main = do
 	prgName <- getProgName
 	rawArgs <- getArgs
 	_args <- initialize prgName rawArgs
-	f <- openField
+	f <- openField "cakyrespa" 640 480
 	t <- newTurtle f
 	pencolor t ((255, 255, 255) :: (Int, Int, Int))
 	fillcolor t ((255, 255, 255) :: (Int, Int, Int))
