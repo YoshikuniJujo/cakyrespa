@@ -29,7 +29,16 @@ cmd str = case readLojban str of
 	b@(Bridi (Brivla "crakla") s) -> fromMaybe (Unknown b) $ readCrakla s
 	b@(Bridi (Brivla "rixykla") s) -> fromMaybe (Unknown b) $ readRixykla s
 	b@(Bridi (Brivla "pilno") s) -> fromMaybe (Unknown b) $ readPilno s
+	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
+
+readClugau :: [(Tag, Sumti)] -> Maybe Command
+readClugau s = do
+	KOhA "ko" <- lookup (FA 1) s
+	case ((Time ["co'a"], KU) `elem` s, (Time ["co'u"], KU) `elem` s) of
+		(True, False) -> return COhACLUGAU
+		(False, True) -> return COhUCLUGAU
+		_ -> fail "bad"
 
 readPilno :: [(Tag, Sumti)] -> Maybe Command
 readPilno s = do
@@ -73,6 +82,8 @@ data Command
 	= CRAKLA Double | RIXYKLA Double
 	| ZUNLE Double | PRITU Double
 	| PEBYSKA Int Int Int
+	| COhACLUGAU
+	| COhUCLUGAU
 	| COhO | Unknown Lojban | ParseErrorC
 	deriving Show
 
@@ -84,6 +95,8 @@ processInput _ t (RIXYKLA d) = backward t d >> return True
 processInput _ t (ZUNLE d) = left t d >> return True
 processInput _ t (PRITU d) = right t d >> return True
 processInput _ t (PEBYSKA r g b) = pencolor t (r, g, b) >> return True
+processInput _ t COhACLUGAU = beginfill t >> return True
+processInput _ t COhUCLUGAU = endfill t >> return True
 processInput _ _ COhO = return False
 processInput f _ u@(Unknown _) = do
 	outputString f ".i mi na jimpe"

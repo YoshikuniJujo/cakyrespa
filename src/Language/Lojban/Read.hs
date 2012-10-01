@@ -8,8 +8,9 @@ module Language.Lojban.Read (
 	readLojban
 ) where
 
-import Language.Lojban.Parser hiding
-	(Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause)
+import Language.Lojban.Parser hiding (
+	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
+	Time, KU)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
 
@@ -34,21 +35,23 @@ data Sumti
 	| LE Selbri
 	| LO Selbri (Maybe RelativeClause)
 	| LI Mex
-	deriving Show
+	| KU
+	deriving (Show, Eq)
 
 data RelativeClause
 	= POI Selbri
 	| Debug String
-	deriving Show
+	deriving (Show, Eq)
 
 data Mex
 	= Number Double
-	deriving Show
+	deriving (Show, Eq)
 
 data Tag
 	= FA Int
 	| FIhO Selbri
 	| BAI String
+	| Time [String]
 	deriving (Show, Eq)
 
 readLojban :: String -> Lojban
@@ -64,7 +67,8 @@ process (TermsBridiTail ss _ _ (SelbriTailTerms selbri ts _ _)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss ts
 process (TermsBridiTail ss _ _ (P.Selbri selbri)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss []
-process t = error $ show t
+process (P.Selbri selbri) = Bridi (readSelbri selbri) []
+process t = error $ "process: " ++ show t
 
 processTagSumti :: [P.Sumti] -> [P.Sumti] -> [(Tag, Sumti)]
 processTagSumti s t = let
@@ -85,7 +89,11 @@ readTagSumti n e r (s : rest) =
 readTag :: P.Tag -> (Maybe Int, Tag)
 readTag (P.FA (_, f, _) _) = let n = fromJust $ lookup f faList in (Just n, FA n)
 readTag (P.BAI _ _ (_, b, _) _ _) = (Nothing, BAI b)
-readTag _ = error "yet"
+readTag (P.Time _ _ _ ts) = (Nothing, Time $ map readTime ts)
+readTag t = error $ show t
+
+readTime ::  IntervalProperty -> String
+readTime (ZAhO (_, z, _) _) = z
 
 faList :: [(String, Int)]
 faList = [
@@ -101,6 +109,8 @@ readSumti (P.KOhA (_, k, _) _) = KOhA k
 readSumti (LALE (_, "lo", _) _ st _ _) = LO selbri relative
 	where (selbri, relative) = readSumtiTail st
 readSumti (P.LI _ _ m _ _) = LI $ readMex m
+readSumti (P.KU _ _) = KU
+readSumti s = error $ show s
 
 readMex :: Operand -> Mex
 readMex (P.Number n _ _) = readNumber n
