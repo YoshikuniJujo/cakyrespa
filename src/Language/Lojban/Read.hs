@@ -15,10 +15,6 @@ import qualified Language.Lojban.Parser as P
 import Data.Maybe
 import Data.Char
 
-main = do
-	let	ret = readLojban ".i ko carna fi lo zunle la'u li panono"
-	print ret
-
 data Lojban
 	= Bridi Selbri [(Tag, Sumti)]
 	| Vocative String
@@ -97,6 +93,7 @@ readTag t = error $ "readTag: " ++ show t
 
 readTime ::  IntervalProperty -> String
 readTime (ZAhO (_, z, _) _) = z
+readTime ip = error $ "readTime: " ++ show ip
 
 faList :: [(String, Int)]
 faList = [
@@ -119,8 +116,9 @@ readSumti s = error $ "readSumti: " ++ show s
 
 readMex :: Operand -> Mex
 readMex (P.Number n _ _) = readNumber n
+readMex o = error $ "readMex: " ++ show o
 
--- readNumber :: P.Number -> Mex
+readNumber :: [Clause] -> Mex
 readNumber = Number . paToInt . map (\(_, p, _) -> p)
 
 processKIhO :: [String] -> [String]
@@ -138,6 +136,7 @@ paToInt = pti . reverse . processKIhO
 	pti [] = 0
 	pti (p : rest) = fromJust (lookup p paList) + 10 * pti rest
 
+paList :: [(String, Double)]
 paList = [
 	("no", 0),
 	("pa", 1),
@@ -156,6 +155,7 @@ readSumtiTail (SelbriRelativeClauses s Nothing) =
 	(readSelbri s, Nothing)
 readSumtiTail (SelbriRelativeClauses s (Just r)) =
 	(readSelbri s, Just $ readRelativeClauses r)
+readSumtiTail st = error $ "readSumtiTail: " ++ show st
 
 readRelativeClauses :: P.RelativeClause -> RelativeClause
 readRelativeClauses (NOI (_, "poi", _) _ bridi _ _) =

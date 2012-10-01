@@ -147,11 +147,11 @@ processInput _ t COhUCLUGAU = endfill t >> return True
 processInput _ _ COhO = return False
 processInput f _ u@(Unknown _) = do
 	outputString f ".i mi na jimpe"
-	putStrLn $ show u
+	print u
 	return True
 processInput f _ u@(UnknownSelpli _) = do
 	outputString f ".i mi na djuno lo bi'unai selpli"
-	putStrLn $ show u
+	print u
 	return True
 processInput f _ ParseErrorC = do
 	outputString f ".i di'u na drani fo lo gerna"
