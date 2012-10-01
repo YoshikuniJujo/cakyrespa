@@ -4,11 +4,12 @@ module Language.Lojban.Read (
 	Sumti(..),
 	Tag(..),
 	Mex(..),
+	RelativeClause(..),
 	readLojban
 ) where
 
 import Language.Lojban.Parser hiding
-	(Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI)
+	(Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
 
@@ -31,8 +32,13 @@ data Sumti
 	= KOhA String
 	| LA (Either String Selbri)
 	| LE Selbri
-	| LO Selbri
+	| LO Selbri (Maybe RelativeClause)
 	| LI Mex
+	deriving Show
+
+data RelativeClause
+	= POI Selbri
+	| Debug String
 	deriving Show
 
 data Mex
@@ -92,7 +98,8 @@ faList = [
 
 readSumti :: P.Sumti -> Sumti
 readSumti (P.KOhA (_, k, _) _) = KOhA k
-readSumti (LALE (_, "lo", _) _ st _ _) = LO $ readSumtiTail st
+readSumti (LALE (_, "lo", _) _ st _ _) = LO selbri relative
+	where (selbri, relative) = readSumtiTail st
 readSumti (P.LI _ _ m _ _) = LI $ readMex m
 
 readMex :: Operand -> Mex
@@ -120,8 +127,16 @@ paList = [
 	("so", 9)
  ]
 
-readSumtiTail :: SumtiTail -> Selbri
-readSumtiTail (SelbriRelativeClauses s _) = readSelbri s
+readSumtiTail :: SumtiTail -> (Selbri, Maybe RelativeClause)
+readSumtiTail (SelbriRelativeClauses s Nothing) =
+	(readSelbri s, Nothing)
+readSumtiTail (SelbriRelativeClauses s (Just r)) =
+	(readSelbri s, Just $ readRelativeClauses r)
+
+readRelativeClauses :: P.RelativeClause -> RelativeClause
+readRelativeClauses (NOI (_, "poi", _) _ (P.Selbri selbri) _ _) =
+	POI $ readSelbri selbri
+readRelativeClauses r = Debug $  show r
 
 readSelbri :: P.Selbri -> Selbri
 readSelbri (P.Brivla (_, b, _) _) = Brivla b

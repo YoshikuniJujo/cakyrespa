@@ -28,7 +28,20 @@ cmd str = case readLojban str of
 	b@(Bridi (Brivla "carna") s) -> fromMaybe (Unknown b) $ readCarna s
 	b@(Bridi (Brivla "crakla") s) -> fromMaybe (Unknown b) $ readCrakla s
 	b@(Bridi (Brivla "rixykla") s) -> fromMaybe (Unknown b) $ readRixykla s
+	b@(Bridi (Brivla "pilno") s) -> fromMaybe (Unknown b) $ readPilno s
 	r -> Unknown r
+
+readPilno :: [(Tag, Sumti)] -> Maybe Command
+readPilno s = do
+	KOhA "ko" <- lookup (FA 1) s
+	LO (Brivla "penbi") (Just (POI (Brivla skari))) <- lookup (FA 2) s
+	(r, g, b) <- lookup skari skaste
+	return $ PEBYSKA r g b
+
+skaste :: [(String, (Int, Int, Int))]
+skaste = [
+	("xunre", (255, 0, 0))
+ ]
 
 readLAhU2 :: [(Tag, Sumti)] -> Maybe Double
 readLAhU2 s = do
@@ -48,7 +61,8 @@ readRixykla s = do
 readCarna :: [(Tag, Sumti)] -> Maybe Command
 readCarna s = do
 	KOhA "ko" <- lookup (FA 1) s
-	let	LO (Brivla lr) = fromMaybe (LO $ Brivla "zunle") $ lookup (FA 3) s
+	let	LO (Brivla lr) _ =
+			fromMaybe (LO (Brivla "zunle") Nothing) $ lookup (FA 3) s
 	 	d = fromMaybe 90 $ readLAhU2 s
 	case lr of
 		"zunle" -> return $ ZUNLE d
@@ -58,6 +72,7 @@ readCarna s = do
 data Command
 	= CRAKLA Double | RIXYKLA Double
 	| ZUNLE Double | PRITU Double
+	| PEBYSKA Int Int Int
 	| COhO | Unknown Lojban | ParseErrorC
 	deriving Show
 
@@ -68,10 +83,11 @@ processInput _ t (CRAKLA d) = forward t d >> return True
 processInput _ t (RIXYKLA d) = backward t d >> return True
 processInput _ t (ZUNLE d) = left t d >> return True
 processInput _ t (PRITU d) = right t d >> return True
+processInput _ t (PEBYSKA r g b) = pencolor t (r, g, b) >> return True
 processInput _ _ COhO = return False
-processInput f _ (Unknown t) = do
+processInput f _ u@(Unknown _) = do
 	outputString f ".i mi na jimpe"
-	putStrLn $ show t
+	putStrLn $ show u
 	return True
 processInput f _ ParseErrorC = do
 	outputString f ".i di'u na drani fo lo gerna"
