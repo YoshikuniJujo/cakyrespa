@@ -43,9 +43,18 @@ readClugau s = do
 readPilno :: [(Tag, Sumti)] -> Maybe Command
 readPilno s = do
 	KOhA "ko" <- lookup (FA 1) s
-	LO (Brivla "penbi") (Just (POI (Brivla skari))) <- lookup (FA 2) s
-	(r, g, b) <- lookup skari skaste
-	return $ PEBYSKA r g b
+	selpli <- lookup (FA 2) s
+	case selpli of
+		LO (Brivla "penbi") (Just (POI (Brivla skari))) -> do
+			(r, g, b) <- lookup skari skaste
+			return $ PEBYSKA r g b
+		LO (Linkargs (Brivla "penbi") (LO (Brivla skari) _)) _ -> do
+			(r, g, b) <- lookup skari skaste
+			return $ PEBYSKA r g b
+		LO (Brivla "burcu") (Just (POI (Brivla skari))) -> do
+			(r, g, b) <- lookup skari skaste
+			return $ BURSKA r g b
+		_ -> return $ UnknownSelpli selpli
 
 skaste :: [(String, (Int, Int, Int))]
 skaste = [
@@ -82,9 +91,11 @@ data Command
 	= CRAKLA Double | RIXYKLA Double
 	| ZUNLE Double | PRITU Double
 	| PEBYSKA Int Int Int
+	| BURSKA Int Int Int
 	| COhACLUGAU
 	| COhUCLUGAU
 	| COhO | Unknown Lojban | ParseErrorC
+	| UnknownSelpli Sumti
 	deriving Show
 
 data LR = L | R | BadLR deriving Show
@@ -95,11 +106,16 @@ processInput _ t (RIXYKLA d) = backward t d >> return True
 processInput _ t (ZUNLE d) = left t d >> return True
 processInput _ t (PRITU d) = right t d >> return True
 processInput _ t (PEBYSKA r g b) = pencolor t (r, g, b) >> return True
+processInput _ t (BURSKA r g b) = fillcolor t (r, g, b) >> return True
 processInput _ t COhACLUGAU = beginfill t >> return True
 processInput _ t COhUCLUGAU = endfill t >> return True
 processInput _ _ COhO = return False
 processInput f _ u@(Unknown _) = do
 	outputString f ".i mi na jimpe"
+	putStrLn $ show u
+	return True
+processInput f _ u@(UnknownSelpli _) = do
+	outputString f ".i mi na djuno lo bi'unai selpli"
 	putStrLn $ show u
 	return True
 processInput f _ ParseErrorC = do
