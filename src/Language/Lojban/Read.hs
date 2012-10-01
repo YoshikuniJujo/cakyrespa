@@ -1,4 +1,9 @@
-module ReadLojban (
+module Language.Lojban.Read (
+	Lojban(..),
+	Selbri(..),
+	Sumti(..),
+	Tag(..),
+	Mex(..),
 	readLojban
 ) where
 
@@ -13,12 +18,14 @@ main = do
 
 data Lojban
 	= Bridi Selbri [(Tag, Sumti)]
+	| Vocative String
+	| Free [Free]
 	| ParseError String
 	deriving Show
 
 data Selbri
 	= Brivla String
-	deriving Show
+	deriving (Show, Eq)
 
 data Sumti
 	= KOhA String
@@ -29,22 +36,28 @@ data Sumti
 	deriving Show
 
 data Mex
-	= Number Int
+	= Number Double
 	deriving Show
 
 data Tag
 	= FA Int
 	| FIhO Selbri
 	| BAI String
-	deriving Show
+	deriving (Show, Eq)
 
 readLojban :: String -> Lojban
 readLojban = either (ParseError . show) process . parse
 
 process :: Text -> Lojban
+process (TopText _ _ [VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
+	Vocative v
+process (IText_1 _ _ _ [VocativeSumti [(_, v, _)] _ _] Nothing) = Vocative v
+process (IText_1 _ _ _ fs@(_ : _) Nothing) = Free fs
 process (IText_1 _ _ _ _ (Just t)) = process t
 process (TermsBridiTail ss _ _ (SelbriTailTerms selbri ts _ _)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss ts
+process (TermsBridiTail ss _ _ (P.Selbri selbri)) =
+	Bridi (readSelbri selbri) $ processTagSumti ss []
 process t = error $ show t
 
 processTagSumti :: [P.Sumti] -> [P.Sumti] -> [(Tag, Sumti)]
@@ -88,7 +101,7 @@ readMex (P.Number n _ _) = readNumber n
 -- readNumber :: P.Number -> Mex
 readNumber = Number . paToInt . map (\(_, p, _) -> p)
 
-paToInt :: [String] -> Int
+paToInt :: [String] -> Double
 paToInt = pti . reverse
 	where
 	pti [] = 0
@@ -97,7 +110,14 @@ paToInt = pti . reverse
 paList = [
 	("no", 0),
 	("pa", 1),
-	("re", 2)
+	("re", 2),
+	("ci", 3),
+	("vo", 4),
+	("mu", 5),
+	("xa", 6),
+	("ze", 7),
+	("bi", 8),
+	("so", 9)
  ]
 
 readSumtiTail :: SumtiTail -> Selbri
