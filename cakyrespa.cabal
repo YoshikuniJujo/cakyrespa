@@ -7,6 +7,9 @@ stability:	Alpha
 license:	BSD3
 license-file:	LICENSE
 
+author:		iocikun juj <PAF01143@nifty.ne.jp>
+maintainer:	iocikun juj <PAF01143@nifty.ne.jp>
+
 category:	Teaching
 synopsis:	run turtle like LOGO with lojban
 description:	run turtle like LOGO with lojban
