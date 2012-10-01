@@ -7,6 +7,7 @@ stability:	Alpha
 license:	BSD3
 license-file:	LICENSE
 
+category:	Teaching
 synopsis:	run turtle like LOGO with lojban
 description:	run turtle like LOGO with lojban
 	.
