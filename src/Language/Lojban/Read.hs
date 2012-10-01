@@ -13,6 +13,7 @@ import Language.Lojban.Parser hiding (
 	Time, KU, Linkargs, FIhO)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
+import Data.Char
 
 main = do
 	let	ret = readLojban ".i ko carna fi lo zunle la'u li panono"
@@ -122,8 +123,17 @@ readMex (P.Number n _ _) = readNumber n
 -- readNumber :: P.Number -> Mex
 readNumber = Number . paToInt . map (\(_, p, _) -> p)
 
+processKIhO :: [String] -> [String]
+processKIhO = reverse . pk 3 . reverse
+	where
+	pk _ [] = []
+	pk n ("ki'o" : rest) = replicate n "no" ++ pk 3 rest
+	pk n (pa : rest)
+		| n > 0 = pa : pk (n - 1) rest
+		| otherwise = pa : pk 2 rest
+
 paToInt :: [String] -> Double
-paToInt = pti . reverse
+paToInt = pti . reverse . processKIhO
 	where
 	pti [] = 0
 	pti (p : rest) = fromJust (lookup p paList) + 10 * pti rest
@@ -153,7 +163,7 @@ readRelativeClauses (NOI (_, "poi", _) _ bridi _ _) =
 readRelativeClauses r = Debug $  show r
 
 readSelbri :: P.Selbri -> Selbri
-readSelbri (P.Brivla (_, b, _) _) = Brivla b
+readSelbri (P.Brivla (_, b, _) _) = Brivla $ map toLower b
 readSelbri (P.Linkargs selbri (BE (_, "be", _) _ sumti _ _ _)) =
 	Linkargs (readSelbri selbri) (readSumti sumti)
 readSelbri s = error $ "readSelbri: " ++ show s
