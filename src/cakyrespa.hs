@@ -28,6 +28,8 @@ cmd = pcmd . readLojban
 pcmd p = case p of
 	(Vocative "co'o") -> COhO
 	(TenseGI "ba" b c) -> Commands (pcmd b) (pcmd c)
+	b@(Bridi (Brivla "tcidu") s) -> fromMaybe (Unknown b) $ readTcidu s
+	b@(Bridi (Brivla "rejgau") s) -> fromMaybe (Unknown b) $ readRejgau s
 	b@(Bridi (Brivla "viska") s) -> fromMaybe (Unknown b) $ readViska s
 	b@(Bridi (NA (Brivla "viska")) s) -> fromMaybe (Unknown b) $ readNAViska s
 	b@(Bridi (Brivla "cisni") s) -> fromMaybe (Unknown b) $ readCisni s
@@ -41,6 +43,18 @@ pcmd p = case p of
 	b@(Bridi (NA (Brivla "pilno")) s) -> fromMaybe (Unknown b) $ readNAPilno s
 	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
+
+readTcidu s = do
+	KOhA "ko" <- lookup (FA 1) s
+	LA (Right (ME (ZOI fp))) <- lookup (FA 3) s
+	return $ READFILE fp
+
+readRejgau s = do
+	KOhA "ko" <- lookup (FA 1) s
+	ZOI fp <- lookup (BAI "me'e") s
+	tai <- lookup (BAI "tai") s
+	case tai of
+		LA (Right (Brivla "cakyrespa")) -> return $ SAVEASCAK fp
 
 readViska :: [(Tag, Sumti)] -> Maybe Command
 readViska s = do
@@ -84,9 +98,9 @@ readClugau s = do
 
 readBAPilno :: [(Tag, Sumti)] -> Maybe Command
 readBAPilno s = do
-	cmd <- readPilno s
-	if (Time ["ba"], KU) `elem` s then return cmd
-		else return $ Commands cmd PILNOLOPENBI
+	cm <- readPilno s
+	if (Time ["ba"], KU) `elem` s then return cm
+		else return $ Commands cm PILNOLOPENBI
 
 readPilno :: [(Tag, Sumti)] -> Maybe Command
 readPilno s = do
@@ -185,6 +199,8 @@ data Command
 	| PILNOLOPENBI
 	| NAVISKA
 	| VISKA
+	| SAVEASCAK FilePath
+	| READFILE FilePath
 	| COhO | Unknown Lojban | ParseErrorC
 	| UnknownSelpli Sumti
 	deriving Show
@@ -211,6 +227,8 @@ processInput _ _ COhO = return False
 processInput f t (Commands c d) = processInput f t c >> processInput f t d
 processInput f t (Repeat n c) = sequence_ (replicate n (processInput f t c)) >>
 	return True
+processInput _ t (SAVEASCAK fp) = inputs t >>= writeFile fp . show >> return True
+processInput _ t (READFILE fp) = readFile fp >>= runInputs t . read >> return True
 processInput f _ u@(Unknown _) = do
 	outputString f ".i mi na jimpe"
 	print u

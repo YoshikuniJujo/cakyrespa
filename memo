@@ -32,4 +32,18 @@ ko rejgau fi'o cmene zoi py. picture.ckr .py.
 その前に undo を実装したい。
 
 線を消す。ko na pilno lo penbi でいいか。
-亀を消す。
+亀を消す。na viska ko とした。
+
+SE に対応したい。
+けど、NA との関係でややめんどくさいかな?
+そうでもないか。
+
+保存は、la SVG として、と la cakyrespa として、との指定ができるようにする。
+また la cakyrespa からの読み込みも実装する。
+
+ko rejgau me'e zoi py. picture.svg .py. setai la syvygyd.
+ko rejgau me'e zoi py. picture.ckr .py. setai la cakyrespa
+
+ko tcidu fi la me zoi py. picture.ckr .py.
+
+今の実装では setai でも tai でも同じに扱ってしまうのでそこを何とかしたい。

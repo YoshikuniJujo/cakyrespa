@@ -10,7 +10,7 @@ module Language.Lojban.Read (
 
 import Language.Lojban.Parser hiding (
 	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
-	Time, KU, Linkargs, FIhO, NU, NA)
+	Time, KU, Linkargs, FIhO, NU, NA, LA, ZOI, ME)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
 import Data.Char
@@ -30,6 +30,7 @@ data Selbri
 	| NU Lojban
 	| NotImplementedSelbri String
 	| NA Selbri
+	| ME Sumti
 	deriving (Show, Eq)
 
 data Sumti
@@ -40,6 +41,7 @@ data Sumti
 	| LI Mex
 	| KU
 	| SFIhO Selbri Sumti
+	| ZOI String
 	| NotImplementedSumti String
 	deriving (Show, Eq)
 
@@ -138,11 +140,18 @@ readSumti :: P.Sumti -> Sumti
 readSumti (P.KOhA (_, k, _) _) = KOhA k
 readSumti (LALE (_, "lo", _) _ st _ _) = LO selbri relative
 	where (selbri, relative) = readSumtiTail st
+readSumti (LALE (_, "la", _) _ st _ _) = LA $ Right selbri
+	where (selbri, _relative) = readSumtiTail st
 readSumti (P.LI _ _ m _ _) = LI $ readMex m
 readSumti (P.KU _ _) = KU
 readSumti (TagSumti (P.FIhO (_, "fi'o", _) _ selbri _ _) sumti) =
 	SFIhO (readSelbri selbri) (readSumti sumti)
+readSumti (P.ZOI _ "zoi" ws _ _) = ZOI $ processZOI $ concat ws
 readSumti s = NotImplementedSumti $ "readSumti: " ++ show s
+
+processZOI :: String -> String
+processZOI ('.' : str) = let ('.' : s) = reverse str in
+	dropWhile isSpace $ reverse $ dropWhile isSpace s
 
 readMex :: Operand -> Mex
 readMex (P.Number n _ _) = readNumber n
@@ -204,6 +213,7 @@ readSelbri (P.Linkargs selbri (BE (_, "be", _) _ sumti _ _ _)) =
 	Linkargs (readSelbri selbri) (readSumti sumti)
 readSelbri (P.NU (_, "nu", _) _ _ _ bridi _ _) = NU $ process bridi
 readSelbri (P.NA (_, "na", _) _ s) = NA $ readSelbri s
+readSelbri (P.ME (_, "me", _) _ s _ _ _ _) = ME $ readSumti s
 readSelbri s = NotImplementedSelbri $ "readSelbri: " ++ show s
 	
 next :: Int -> [Int] -> Int
