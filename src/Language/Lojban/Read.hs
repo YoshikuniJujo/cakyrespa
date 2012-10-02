@@ -114,6 +114,8 @@ readTagSumti n e r (s : rest) =
 readTag :: P.Tag -> (Maybe Int, Tag)
 readTag (P.FA (_, f, _) _) = let n = fromJust $ lookup f faList in (Just n, FA n)
 readTag (P.BAI _ _ (_, b, _) _ _) = (Nothing, BAI b)
+readTag (P.Time _ [((_, t, _), Nothing, Nothing)] _ _) =
+	(Nothing, Time [t])
 readTag (P.Time _ _ _ ts) = (Nothing, Time $ map readTime ts)
 readTag t = (Nothing, NotImplementedTag $ "readTag: " ++ show t)
 

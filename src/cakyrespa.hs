@@ -35,7 +35,7 @@ pcmd p = case p of
 	b@(Bridi (Brivla "crakla") s) -> fromMaybe (Unknown b) $ readCrakla s
 	b@(Bridi (Brivla "rixykla") s) -> fromMaybe (Unknown b) $ readRixykla s
 	b@(Bridi (Brivla "pilno") s) ->
-		fromMaybe (Unknown b) $ readPilno s
+		fromMaybe (Unknown b) $ readBAPilno s
 	b@(Bridi (NA (Brivla "pilno")) s) -> fromMaybe (Unknown b) $ readNAPilno s
 	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
@@ -69,6 +69,12 @@ readClugau s = do
 		(True, False) -> return COhACLUGAU
 		(False, True) -> return COhUCLUGAU
 		_ -> fail "bad"
+
+readBAPilno :: [(Tag, Sumti)] -> Maybe Command
+readBAPilno s = do
+	cmd <- readPilno s
+	if (Time ["ba"], KU) `elem` s then return cmd
+		else return $ Commands cmd PILNOLOPENBI
 
 readPilno :: [(Tag, Sumti)] -> Maybe Command
 readPilno s = do
