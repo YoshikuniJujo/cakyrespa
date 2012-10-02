@@ -10,7 +10,7 @@ module Language.Lojban.Read (
 
 import Language.Lojban.Parser hiding (
 	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
-	Time, KU, Linkargs, FIhO, NU)
+	Time, KU, Linkargs, FIhO, NU, NA)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
 import Data.Char
@@ -29,6 +29,7 @@ data Selbri
 	| Linkargs Selbri Sumti
 	| NU Lojban
 	| NotImplementedSelbri String
+	| NA Selbri
 	deriving (Show, Eq)
 
 data Sumti
@@ -198,6 +199,7 @@ readSelbri (P.Brivla (_, b, _) _) = Brivla $ map toLower b
 readSelbri (P.Linkargs selbri (BE (_, "be", _) _ sumti _ _ _)) =
 	Linkargs (readSelbri selbri) (readSumti sumti)
 readSelbri (P.NU (_, "nu", _) _ _ _ bridi _ _) = NU $ process bridi
+readSelbri (P.NA (_, "na", _) _ s) = NA $ readSelbri s
 readSelbri s = NotImplementedSelbri $ "readSelbri: " ++ show s
 	
 next :: Int -> [Int] -> Int

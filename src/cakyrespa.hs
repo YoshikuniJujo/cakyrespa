@@ -34,9 +34,16 @@ pcmd p = case p of
 	b@(Bridi (Brivla "carna") s) -> fromMaybe (Unknown b) $ readCarna s
 	b@(Bridi (Brivla "crakla") s) -> fromMaybe (Unknown b) $ readCrakla s
 	b@(Bridi (Brivla "rixykla") s) -> fromMaybe (Unknown b) $ readRixykla s
-	b@(Bridi (Brivla "pilno") s) -> fromMaybe (Unknown b) $ readPilno s
+	b@(Bridi (Brivla "pilno") s) ->
+		fromMaybe (Unknown b) $ readPilno s
+	b@(Bridi (NA (Brivla "pilno")) s) -> fromMaybe (Unknown b) $ readNAPilno s
 	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
+
+readNAPilno :: [(Tag, Sumti)] -> Maybe Command
+readNAPilno s = do
+	KOhA "ko" <- lookup (FA 1) s
+	return NAPILNOLOPENBI
 
 readCisni :: [(Tag, Sumti)] -> Maybe Command
 readCisni s = do
@@ -85,6 +92,7 @@ readPilno s = do
 			(Brivla skari) _))) _ -> do
 			(r, g, b) <- lookup skari skaste
 			return $ BURSKA r g b
+		LO (Brivla "penbi") Nothing -> return PILNOLOPENBI
 		_ -> return $ UnknownSelpli selpli
 
 skaste :: [(String, (Int, Int, Int))]
@@ -155,6 +163,8 @@ data Command
 	| Repeat Int Command
 	| XRUTI
 	| CISNI Double
+	| NAPILNOLOPENBI
+	| PILNOLOPENBI
 	| COhO | Unknown Lojban | ParseErrorC
 	| UnknownSelpli Sumti
 	deriving Show
@@ -173,6 +183,8 @@ processInput _ t COhACLUGAU = beginfill t >> return True
 processInput _ t COhUCLUGAU = endfill t >> return True
 processInput _ t XRUTI = undo t >> return True
 processInput _ t (CISNI s) = shapesize t s s >> return True
+processInput _ t NAPILNOLOPENBI = penup t >> return True
+processInput _ t PILNOLOPENBI = pendown t >> return True
 processInput _ _ COhO = return False
 processInput f t (Commands c d) = processInput f t c >> processInput f t d
 processInput f t (Repeat n c) = sequence_ (replicate n (processInput f t c)) >>
