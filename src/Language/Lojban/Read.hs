@@ -142,6 +142,7 @@ readSumti (LALE (_, "lo", _) _ st _ _) = LO selbri relative
 	where (selbri, relative) = readSumtiTail st
 readSumti (LALE (_, "la", _) _ st _ _) = LA $ Right selbri
 	where (selbri, _relative) = readSumtiTail st
+readSumti (P.LA (_, "la", _) _ _ [(_, n, _)] _) = LA $ Left n
 readSumti (P.LI _ _ m _ _) = LI $ readMex m
 readSumti (P.KU _ _) = KU
 readSumti (TagSumti (P.FIhO (_, "fi'o", _) _ selbri _ _) sumti) =

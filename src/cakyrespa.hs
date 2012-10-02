@@ -2,6 +2,7 @@ module Main where
 
 import Graphics.UI.GLUT hiding (R, Repeat)
 import Graphics.UI.GLUT.Turtle
+import Text.XML.YJSVG
 
 import Language.Lojban.Read
 
@@ -55,6 +56,8 @@ readRejgau s = do
 	tai <- lookup (BAI "tai") s
 	case tai of
 		LA (Right (Brivla "cakyrespa")) -> return $ SAVEASCAK fp
+		LA (Left "syvygyd") -> return $ SAVEASSVG fp
+		s -> error $ show s
 
 readViska :: [(Tag, Sumti)] -> Maybe Command
 readViska s = do
@@ -199,6 +202,7 @@ data Command
 	| PILNOLOPENBI
 	| NAVISKA
 	| VISKA
+	| SAVEASSVG FilePath
 	| SAVEASCAK FilePath
 	| READFILE FilePath
 	| COhO | Unknown Lojban | ParseErrorC
@@ -226,6 +230,12 @@ processInput _ t VISKA = showturtle t >> return True
 processInput _ _ COhO = return False
 processInput f t (Commands c d) = processInput f t c >> processInput f t d
 processInput f t (Repeat n c) = sequence_ (replicate n (processInput f t c)) >>
+	return True
+processInput _ t (SAVEASSVG fp) = do
+	w <- windowWidth t
+	h <- windowHeight t
+	svg <- getSVG t
+	writeFile fp $ showSVG w h svg
 	return True
 processInput _ t (SAVEASCAK fp) = inputs t >>= writeFile fp . show >> return True
 processInput _ t (READFILE fp) = readFile fp >>= runInputs t . read >> return True
