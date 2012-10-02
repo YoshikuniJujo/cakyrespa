@@ -28,6 +28,7 @@ cmd = pcmd . readLojban
 pcmd p = case p of
 	(Vocative "co'o") -> COhO
 	(TenseGI "ba" b c) -> Commands (pcmd b) (pcmd c)
+	b@(Bridi (Brivla "cisni") s) -> fromMaybe (Unknown b) $ readCisni s
 	b@(Bridi (Brivla "xruti") s) -> fromMaybe (Unknown b) $ readXruti s
 	b@(Bridi (Brivla "rapli") s) -> fromMaybe (Unknown b) $ readRapli s
 	b@(Bridi (Brivla "carna") s) -> fromMaybe (Unknown b) $ readCarna s
@@ -36,6 +37,12 @@ pcmd p = case p of
 	b@(Bridi (Brivla "pilno") s) -> fromMaybe (Unknown b) $ readPilno s
 	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
+
+readCisni :: [(Tag, Sumti)] -> Maybe Command
+readCisni s = do
+	LI (Number n) <- lookup (FA 1) s
+	KOhA "ko" <- lookup (FA 2) s
+	return $ CISNI n
 
 readXruti :: [(Tag, Sumti)] -> Maybe Command
 readXruti s = do
@@ -147,6 +154,7 @@ data Command
 	| Commands Command Command
 	| Repeat Int Command
 	| XRUTI
+	| CISNI Double
 	| COhO | Unknown Lojban | ParseErrorC
 	| UnknownSelpli Sumti
 	deriving Show
@@ -164,6 +172,7 @@ processInput _ t (BURSKA r g b) = fillcolor t (r, g, b) >> return True
 processInput _ t COhACLUGAU = beginfill t >> return True
 processInput _ t COhUCLUGAU = endfill t >> return True
 processInput _ t XRUTI = undo t >> return True
+processInput _ t (CISNI s) = shapesize t s s >> return True
 processInput _ _ COhO = return False
 processInput f t (Commands c d) = processInput f t c >> processInput f t d
 processInput f t (Repeat n c) = sequence_ (replicate n (processInput f t c)) >>
