@@ -16,3 +16,17 @@ bagi (bagi broda gi brode) gi brodi といった感じか。
 あるいは、bagi broda gi (bagi brode gi brodi)
 
 おりかえし表示が必要だ。
+
+次は 画像を SVG file に記録する。
+
+ko rejgau fi'o cmene zoi py. picture.svg .py.
+
+といった感じ。
+あるいは、再編集可能な形で保存したほうがいいのかもしれない。
+とすると、
+
+ko rejgau fi'o cmene zoi py. picture.ckr .py.
+
+とかか。
+
+その前に undo を実装したい。

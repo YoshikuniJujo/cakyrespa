@@ -28,6 +28,7 @@ cmd = pcmd . readLojban
 pcmd p = case p of
 	(Vocative "co'o") -> COhO
 	(TenseGI "ba" b c) -> Commands (pcmd b) (pcmd c)
+	b@(Bridi (Brivla "xruti") s) -> fromMaybe (Unknown b) $ readXruti s
 	b@(Bridi (Brivla "rapli") s) -> fromMaybe (Unknown b) $ readRapli s
 	b@(Bridi (Brivla "carna") s) -> fromMaybe (Unknown b) $ readCarna s
 	b@(Bridi (Brivla "crakla") s) -> fromMaybe (Unknown b) $ readCrakla s
@@ -35,6 +36,11 @@ pcmd p = case p of
 	b@(Bridi (Brivla "pilno") s) -> fromMaybe (Unknown b) $ readPilno s
 	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
+
+readXruti :: [(Tag, Sumti)] -> Maybe Command
+readXruti s = do
+	KOhA "ko" <- lookup (FA 1) s
+	return $ XRUTI
 
 readRapli :: [(Tag, Sumti)] -> Maybe Command
 readRapli s = do
@@ -140,6 +146,7 @@ data Command
 	| COhUCLUGAU
 	| Commands Command Command
 	| Repeat Int Command
+	| XRUTI
 	| COhO | Unknown Lojban | ParseErrorC
 	| UnknownSelpli Sumti
 	deriving Show
@@ -156,6 +163,7 @@ processInput _ t (PEBYSKA r g b) = pencolor t (r, g, b) >> return True
 processInput _ t (BURSKA r g b) = fillcolor t (r, g, b) >> return True
 processInput _ t COhACLUGAU = beginfill t >> return True
 processInput _ t COhUCLUGAU = endfill t >> return True
+processInput _ t XRUTI = undo t >> return True
 processInput _ _ COhO = return False
 processInput f t (Commands c d) = processInput f t c >> processInput f t d
 processInput f t (Repeat n c) = sequence_ (replicate n (processInput f t c)) >>
