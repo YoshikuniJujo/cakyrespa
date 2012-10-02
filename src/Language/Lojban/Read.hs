@@ -10,13 +10,14 @@ module Language.Lojban.Read (
 
 import Language.Lojban.Parser hiding (
 	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
-	Time, KU, Linkargs, FIhO)
+	Time, KU, Linkargs, FIhO, NU)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
 import Data.Char
 
 data Lojban
 	= Bridi Selbri [(Tag, Sumti)]
+	| TenseGI String Lojban Lojban
 	| Vocative String
 	| Free [Free]
 	| ParseError String
@@ -26,6 +27,7 @@ data Lojban
 data Selbri
 	= Brivla String
 	| Linkargs Selbri Sumti
+	| NU Lojban
 	| NotImplementedSelbri String
 	deriving (Show, Eq)
 
@@ -72,6 +74,15 @@ process (TermsBridiTail ss _ _ (SelbriTailTerms selbri ts _ _)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss ts
 process (TermsBridiTail ss _ _ (P.Selbri selbri)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss []
+process (TermsBridiTail ss _ _
+	(GekSentence
+		(STagGik
+			(P.Time _ [((_, tense, _), _, _)] _ _)
+			((_, "gi", _), _, _))
+		t ((_, "gi", _), _, _) u _ _ _)) =
+	TenseGI tense
+		(process $ TermsBridiTail ss undefined undefined t)
+		(process $ TermsBridiTail ss undefined undefined u)
 process (P.Selbri selbri) = Bridi (readSelbri selbri) []
 process t = NotImplemented $ "process: " ++ show t
 
@@ -178,6 +189,7 @@ readSelbri :: P.Selbri -> Selbri
 readSelbri (P.Brivla (_, b, _) _) = Brivla $ map toLower b
 readSelbri (P.Linkargs selbri (BE (_, "be", _) _ sumti _ _ _)) =
 	Linkargs (readSelbri selbri) (readSumti sumti)
+readSelbri (P.NU (_, "nu", _) _ _ _ bridi _ _) = NU $ process bridi
 readSelbri s = NotImplementedSelbri $ "readSelbri: " ++ show s
 	
 next :: Int -> [Int] -> Int

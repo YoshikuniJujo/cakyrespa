@@ -1,6 +1,6 @@
 module Main where
 
-import Graphics.UI.GLUT hiding (R)
+import Graphics.UI.GLUT hiding (R, Repeat)
 import Graphics.UI.GLUT.Turtle
 
 import Language.Lojban.Read
@@ -23,14 +23,24 @@ main = do
 	mainLoop
 
 cmd :: String -> Command
-cmd str = case readLojban str of
+cmd = pcmd . readLojban
+
+pcmd p = case p of
 	(Vocative "co'o") -> COhO
+	(TenseGI "ba" b c) -> Commands (pcmd b) (pcmd c)
+	b@(Bridi (Brivla "rapli") s) -> fromMaybe (Unknown b) $ readRapli s
 	b@(Bridi (Brivla "carna") s) -> fromMaybe (Unknown b) $ readCarna s
 	b@(Bridi (Brivla "crakla") s) -> fromMaybe (Unknown b) $ readCrakla s
 	b@(Bridi (Brivla "rixykla") s) -> fromMaybe (Unknown b) $ readRixykla s
 	b@(Bridi (Brivla "pilno") s) -> fromMaybe (Unknown b) $ readPilno s
 	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
+
+readRapli :: [(Tag, Sumti)] -> Maybe Command
+readRapli s = do
+	LO (NU p) _ <- lookup (FA 1) s
+	LI (Number n) <- lookup (FA 2) s
+	return $ Repeat (round n) (pcmd p)
 
 readClugau :: [(Tag, Sumti)] -> Maybe Command
 readClugau s = do
@@ -128,6 +138,8 @@ data Command
 	| BURSKA Int Int Int
 	| COhACLUGAU
 	| COhUCLUGAU
+	| Commands Command Command
+	| Repeat Int Command
 	| COhO | Unknown Lojban | ParseErrorC
 	| UnknownSelpli Sumti
 	deriving Show
@@ -145,6 +157,9 @@ processInput _ t (BURSKA r g b) = fillcolor t (r, g, b) >> return True
 processInput _ t COhACLUGAU = beginfill t >> return True
 processInput _ t COhUCLUGAU = endfill t >> return True
 processInput _ _ COhO = return False
+processInput f t (Commands c d) = processInput f t c >> processInput f t d
+processInput f t (Repeat n c) = sequence_ (replicate n (processInput f t c)) >>
+	return True
 processInput f _ u@(Unknown _) = do
 	outputString f ".i mi na jimpe"
 	print u
