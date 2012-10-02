@@ -28,6 +28,8 @@ cmd = pcmd . readLojban
 pcmd p = case p of
 	(Vocative "co'o") -> COhO
 	(TenseGI "ba" b c) -> Commands (pcmd b) (pcmd c)
+	b@(Bridi (Brivla "viska") s) -> fromMaybe (Unknown b) $ readViska s
+	b@(Bridi (NA (Brivla "viska")) s) -> fromMaybe (Unknown b) $ readNAViska s
 	b@(Bridi (Brivla "cisni") s) -> fromMaybe (Unknown b) $ readCisni s
 	b@(Bridi (Brivla "xruti") s) -> fromMaybe (Unknown b) $ readXruti s
 	b@(Bridi (Brivla "rapli") s) -> fromMaybe (Unknown b) $ readRapli s
@@ -39,6 +41,16 @@ pcmd p = case p of
 	b@(Bridi (NA (Brivla "pilno")) s) -> fromMaybe (Unknown b) $ readNAPilno s
 	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
+
+readViska :: [(Tag, Sumti)] -> Maybe Command
+readViska s = do
+	KOhA "ko" <- lookup (FA 2) s
+	return VISKA
+
+readNAViska :: [(Tag, Sumti)] -> Maybe Command
+readNAViska s = do
+	KOhA "ko" <- lookup (FA 2) s
+	return NAVISKA
 
 readNAPilno :: [(Tag, Sumti)] -> Maybe Command
 readNAPilno s = do
@@ -171,6 +183,8 @@ data Command
 	| CISNI Double
 	| NAPILNOLOPENBI
 	| PILNOLOPENBI
+	| NAVISKA
+	| VISKA
 	| COhO | Unknown Lojban | ParseErrorC
 	| UnknownSelpli Sumti
 	deriving Show
@@ -191,6 +205,8 @@ processInput _ t XRUTI = undo t >> return True
 processInput _ t (CISNI s) = shapesize t s s >> return True
 processInput _ t NAPILNOLOPENBI = penup t >> return True
 processInput _ t PILNOLOPENBI = pendown t >> return True
+processInput _ t NAVISKA = hideturtle t >> return True
+processInput _ t VISKA = showturtle t >> return True
 processInput _ _ COhO = return False
 processInput f t (Commands c d) = processInput f t c >> processInput f t d
 processInput f t (Repeat n c) = sequence_ (replicate n (processInput f t c)) >>

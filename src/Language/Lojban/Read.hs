@@ -93,6 +93,8 @@ process (GekSentence
 		(process $ t)
 		(process $ u)
 process (P.Selbri selbri) = Bridi (readSelbri selbri) []
+process (P.SelbriTailTerms selbri ts _ _) =
+	Bridi (readSelbri selbri) $ processTagSumti [] ts
 process t = NotImplemented $ "process: " ++ show t
 
 processTagSumti :: [P.Sumti] -> [P.Sumti] -> [(Tag, Sumti)]
