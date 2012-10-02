@@ -26,5 +26,5 @@ executable	cakyrespa
     main-is:		cakyrespa.hs
     other-modules:	Language.Lojban.Read
     build-depends:	base >3 && <5, lojbanParser >= 0.1.5,
-        gluturtle >= 0.0.10, GLUT, yjsvg
+        gluturtle >= 0.0.12, GLUT, yjsvg
     ghc-options:	-Wall

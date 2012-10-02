@@ -47,3 +47,9 @@ ko rejgau me'e zoi py. picture.ckr .py. setai la cakyrespa
 ko tcidu fi la me zoi py. picture.ckr .py.
 
 今の実装では setai でも tai でも同じに扱ってしまうのでそこを何とかしたい。
+
+2012.10.03 Wed.
+
+次は背景の色の変更。
+それと、 .i を prompt とする。
+また、vi 風の keybind で編集可能にする。
