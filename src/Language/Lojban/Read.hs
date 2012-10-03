@@ -72,6 +72,8 @@ readLojban :: String -> Lojban
 readLojban = processSE . either (ParseError . show) process . parse
 
 processSE :: Lojban -> Lojban
+processSE (Bridi (NA (SE n selbri)) ss) = processSE $
+	Bridi (NA selbri) $ map (first $ flipTag n) ss
 processSE (Bridi (SE n selbri) ss) = processSE $
 	Bridi selbri $ map (first $ flipTag n) ss
 processSE l = l
