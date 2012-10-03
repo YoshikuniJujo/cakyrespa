@@ -56,7 +56,7 @@ readGalfi s = do
 
 readTcidu s = do
 	KOhA "ko" <- lookup (FA 1) s
-	LA (Right (ME (ZOI fp))) <- lookup (FA 3) s
+	LA (Right (ME (ZOI fp))) <- lookup (FA 2) s
 	return $ READFILE fp
 
 readRejgau s = do
