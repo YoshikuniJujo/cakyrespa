@@ -16,8 +16,8 @@ main = do
 	_args <- initialize prgName rawArgs
 	f <- openField "cakyrespa" 640 480
 	t <- newTurtle f
-	pencolor t ((255, 255, 255) :: (Int, Int, Int))
-	fillcolor t ((255, 255, 255) :: (Int, Int, Int))
+--	pencolor t ((255, 255, 255) :: (Int, Int, Int))
+--	fillcolor t ((255, 255, 255) :: (Int, Int, Int))
 	shape t "turtle"
 	shapesize t 3 3
 	oninputtext f (processInput f t . cmd)
@@ -29,6 +29,7 @@ cmd = pcmd . readLojban
 pcmd p = case p of
 	(Vocative "co'o") -> COhO
 	(TenseGI "ba" b c) -> Commands (pcmd b) (pcmd c)
+	b@(Bridi (Brivla "galfi") s) -> fromMaybe (Unknown b) $ readGalfi s
 	b@(Bridi (Brivla "tcidu") s) -> fromMaybe (Unknown b) $ readTcidu s
 	b@(Bridi (Brivla "rejgau") s) -> fromMaybe (Unknown b) $ readRejgau s
 	b@(Bridi (Brivla "viska") s) -> fromMaybe (Unknown b) $ readViska s
@@ -44,6 +45,13 @@ pcmd p = case p of
 	b@(Bridi (NA (Brivla "pilno")) s) -> fromMaybe (Unknown b) $ readNAPilno s
 	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
+
+readGalfi s = do
+	TUhA (KOhA "ko") <- lookup (FA 1) s
+	LO (Brivla "foldi") Nothing <- lookup (FA 2) s
+	LO (Brivla skari) Nothing <- lookup (FA 3) s
+	clr <- lookup skari skaste
+	return $ let (r, g, b) = clr in FLOSKA r g b
 
 readTcidu s = do
 	KOhA "ko" <- lookup (FA 1) s
@@ -192,6 +200,7 @@ data Command
 	| PEBYCISNI Double
 	| PEBYSKA Int Int Int
 	| BURSKA Int Int Int
+	| FLOSKA Int Int Int
 	| COhACLUGAU
 	| COhUCLUGAU
 	| Commands Command Command
@@ -219,6 +228,7 @@ processInput _ t (PRITU d) = right t d >> return True
 processInput _ t (PEBYCISNI s) = pensize t s >> return True
 processInput _ t (PEBYSKA r g b) = pencolor t (r, g, b) >> return True
 processInput _ t (BURSKA r g b) = fillcolor t (r, g, b) >> return True
+processInput _ t (FLOSKA r g b) = bgcolor t (r, g, b) >> return True
 processInput _ t COhACLUGAU = beginfill t >> return True
 processInput _ t COhUCLUGAU = endfill t >> return True
 processInput _ t XRUTI = undo t >> return True

@@ -42,6 +42,7 @@ data Sumti
 	| KU
 	| SFIhO Selbri Sumti
 	| ZOI String
+	| TUhA Sumti
 	| NotImplementedSumti String
 	deriving (Show, Eq)
 
@@ -148,6 +149,7 @@ readSumti (P.KU _ _) = KU
 readSumti (TagSumti (P.FIhO (_, "fi'o", _) _ selbri _ _) sumti) =
 	SFIhO (readSelbri selbri) (readSumti sumti)
 readSumti (P.ZOI _ "zoi" ws _ _) = ZOI $ processZOI $ concat ws
+readSumti (P.LAhE_NAhE (_, "tu'a", _) _ _ _ s _ _) = TUhA $ readSumti s
 readSumti s = NotImplementedSumti $ "readSumti: " ++ show s
 
 processZOI :: String -> String
