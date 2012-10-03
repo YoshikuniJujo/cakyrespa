@@ -61,7 +61,7 @@ data Mex
 data Tag
 	= FA Int
 	| FIhO Selbri
-	| BAI String
+	| BAI (Maybe String) String
 	| Time [String]
 	| NotImplementedTag String
 	deriving (Show, Eq)
@@ -119,7 +119,8 @@ readTagSumti n e r (s : rest) =
 
 readTag :: P.Tag -> (Maybe Int, Tag)
 readTag (P.FA (_, f, _) _) = let n = fromJust $ lookup f faList in (Just n, FA n)
-readTag (P.BAI _ _ (_, b, _) _ _) = (Nothing, BAI b)
+readTag (P.BAI _ Nothing (_, b, _) _ _) = (Nothing, BAI Nothing b)
+readTag (P.BAI _ (Just (_, s, _)) (_, b, _) _ _) = (Nothing, BAI (Just s) b)
 readTag (P.Time _ [((_, t, _), Nothing, Nothing)] _ _) =
 	(Nothing, Time [t])
 readTag (P.Time _ _ _ ts) = (Nothing, Time $ map readTime ts)

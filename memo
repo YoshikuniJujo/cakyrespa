@@ -59,3 +59,5 @@ tu'a ko galfi lo foldi lo xekri 等
 goto の実装
 ko klama li jo'i renonoboi panono
 といった感じか。
+
+次は modal の SE をちゃんと区別するようにする。

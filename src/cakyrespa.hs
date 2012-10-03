@@ -67,8 +67,8 @@ readTcidu s = do
 
 readRejgau s = do
 	KOhA "ko" <- lookup (FA 1) s
-	ZOI fp <- lookup (BAI "me'e") s
-	tai <- lookup (BAI "tai") s
+	ZOI fp <- lookup (BAI Nothing "me'e") s
+	tai <- lookup (BAI (Just "se") "tai") s
 	case tai of
 		LA (Right (Brivla "cakyrespa")) -> return $ SAVEASCAK fp
 		LA (Left "syvygyd") -> return $ SAVEASSVG fp
@@ -177,7 +177,7 @@ skaste = [
 
 readLAhU2 :: [(Tag, Sumti)] -> Maybe Double
 readLAhU2 s = do
-	LI (Number d) <- lookup (BAI "la'u") s
+	LI (Number d) <- lookup (BAI Nothing "la'u") s
 	return d
 
 readCrakla :: [(Tag, Sumti)] -> Maybe Command
