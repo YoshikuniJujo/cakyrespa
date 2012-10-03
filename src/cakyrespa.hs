@@ -30,6 +30,7 @@ cmd = pcmd . readLojban
 pcmd p = case p of
 	(Vocative "co'o") -> COhO
 	(TenseGI "ba" b c) -> Commands (pcmd b) (pcmd c)
+	b@(Bridi (Brivla "klama") s) -> fromMaybe (Unknown b) $ readKlama s
 	b@(Bridi (Brivla "galfi") s) -> fromMaybe (Unknown b) $ readGalfi s
 	b@(Bridi (Brivla "tcidu") s) -> fromMaybe (Unknown b) $ readTcidu s
 	b@(Bridi (Brivla "rejgau") s) -> fromMaybe (Unknown b) $ readRejgau s
@@ -46,6 +47,11 @@ pcmd p = case p of
 	b@(Bridi (NA (Brivla "pilno")) s) -> fromMaybe (Unknown b) $ readNAPilno s
 	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
+
+readKlama s = do
+	KOhA "ko" <- lookup (FA 1) s
+	LI (JOhI [Number x, Number y]) <- lookup (FA 2 ) s
+	return $ KLAMA x y
 
 readGalfi s = do
 	TUhA (KOhA "ko") <- lookup (FA 1) s
@@ -196,7 +202,8 @@ readCarna s = do
 		_ -> fail "bad"
 
 data Command
-	= CRAKLA Double | RIXYKLA Double
+	= KLAMA Double Double
+	| CRAKLA Double | RIXYKLA Double
 	| ZUNLE Double | PRITU Double
 	| PEBYCISNI Double
 	| PEBYSKA Int Int Int
@@ -222,6 +229,7 @@ data Command
 data LR = L | R | BadLR deriving Show
 
 processInput :: Field -> Turtle -> Command -> IO Bool
+processInput _ t (KLAMA x y) = goto t x y >> return True
 processInput _ t (CRAKLA d) = forward t d >> return True
 processInput _ t (RIXYKLA d) = backward t d >> return True
 processInput _ t (ZUNLE d) = left t d >> return True

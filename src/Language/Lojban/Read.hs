@@ -10,7 +10,7 @@ module Language.Lojban.Read (
 
 import Language.Lojban.Parser hiding (
 	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
-	Time, KU, Linkargs, FIhO, NU, NA, LA, ZOI, ME)
+	Time, KU, Linkargs, FIhO, NU, NA, LA, ZOI, ME, JOhI)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
 import Data.Char
@@ -54,6 +54,7 @@ data RelativeClause
 
 data Mex
 	= Number Double
+	| JOhI [Mex]
 	| NotImplementedMex String
 	deriving (Show, Eq)
 
@@ -158,6 +159,7 @@ processZOI ('.' : str) = let ('.' : s) = reverse str in
 
 readMex :: Operand -> Mex
 readMex (P.Number n _ _) = readNumber n
+readMex (P.JOhI (_, "jo'i", _) _ ns _ _) = JOhI $ map readMex ns
 readMex o = NotImplementedMex $ "readMex: " ++ show o
 
 readNumber :: [Clause] -> Mex
