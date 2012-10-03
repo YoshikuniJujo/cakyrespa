@@ -189,10 +189,11 @@ processKIhO = reverse . pk 3 . reverse
 		| otherwise = pa : pk 2 rest
 
 paToInt :: [String] -> Double
-paToInt = pti . reverse . processKIhO
-	where
-	pti [] = 0
-	pti (p : rest) = fromJust (lookup' p paList) + 10 * pti rest
+paToInt ("ni'u" : pas) = - (pti $ reverse $ processKIhO pas)
+paToInt pas = pti $ reverse $ processKIhO pas
+
+pti [] = 0
+pti (p : rest) = fromJust (lookup' p paList) + 10 * pti rest
 
 lookup' :: Eq a => a -> [([a], b)] -> Maybe b
 lookup' _ [] = Nothing

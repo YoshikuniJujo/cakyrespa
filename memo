@@ -61,3 +61,5 @@ ko klama li jo'i renonoboi panono
 といった感じか。
 
 次は modal の SE をちゃんと区別するようにする。
+
+次は負数を扱えるようにする。
