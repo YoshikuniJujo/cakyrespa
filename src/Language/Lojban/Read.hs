@@ -10,10 +10,11 @@ module Language.Lojban.Read (
 
 import Language.Lojban.Parser hiding (
 	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
-	Time, KU, Linkargs, FIhO, NU, NA, LA, ZOI, ME, JOhI)
+	Time, KU, Linkargs, FIhO, NU, NA, LA, ZOI, ME, JOhI, SE)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
 import Data.Char
+import Control.Arrow
 
 data Lojban
 	= Bridi Selbri [(Tag, Sumti)]
@@ -31,6 +32,7 @@ data Selbri
 	| NotImplementedSelbri String
 	| NA Selbri
 	| ME Sumti
+	| SE Int Selbri
 	deriving (Show, Eq)
 
 data Sumti
@@ -67,7 +69,18 @@ data Tag
 	deriving (Show, Eq)
 
 readLojban :: String -> Lojban
-readLojban = either (ParseError . show) process . parse
+readLojban = processSE . either (ParseError . show) process . parse
+
+processSE :: Lojban -> Lojban
+processSE (Bridi (SE n selbri) ss) = processSE $
+	Bridi selbri $ map (first $ flipTag n) ss
+processSE l = l
+
+flipTag :: Int -> Tag -> Tag
+flipTag n (FA f)
+	| f == 1 = FA n
+	| f == n = FA 1
+flipTag _ t = t
 
 process :: Text -> Lojban
 process (TopText _ _ [VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
@@ -220,7 +233,15 @@ readSelbri (P.Linkargs selbri (BE (_, "be", _) _ sumti _ _ _)) =
 readSelbri (P.NU (_, "nu", _) _ _ _ bridi _ _) = NU $ process bridi
 readSelbri (P.NA (_, "na", _) _ s) = NA $ readSelbri s
 readSelbri (P.ME (_, "me", _) _ s _ _ _ _) = ME $ readSumti s
+readSelbri (P.SE (_, se, _) _ s) = SE (fromJust $ lookup se seList) $ readSelbri s
 readSelbri s = NotImplementedSelbri $ "readSelbri: " ++ show s
+
+seList = [
+	("se", 2),
+	("te", 3),
+	("ve", 4),
+	("xe", 5)
+ ]
 	
 next :: Int -> [Int] -> Int
 next n e
