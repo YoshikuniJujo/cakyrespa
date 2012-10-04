@@ -63,3 +63,64 @@ ko klama li jo'i renonoboi panono
 次は modal の SE をちゃんと区別するようにする。
 
 次は負数を扱えるようにする。
+
+2012.10.04 Thu.
+
+関数を作れるようにする。
+引数無しの関数ならば、lonu で作れる。
+実行はたとえば ko gasnu が使えるだろう。
+
+broda bu goi lonu ...
+ko gasnu broda bu でいけるだろう。
+
+引数有りの関数はどうしようか。
+とりあえず、lonu ... ce'u ... とでもしておこうか。
+これで引数ひとつの関係はできる。
+
+複数の引数のある関係はたとえば、
+lonu ... ce'u xi re ... ce'u xi pa といった感じか。
+
+しかし引数の適用はどうするか。
+xy. boi .ybu zo'u ... と zo'u を使うか。
+
+とすると、定義が、
+broda bu goi lonu ce'uxipa klama ce'uxire となり、使用は、
+xy. boi .ybu zo'u ko gasnu broda bu となる。
+定義のなかで、使用することは可能か。
+zo'u が文全体に係ってしまうので難しい。でもできるかな。
+brode bu goi bagi lonu ce'uxipa zo'u ko gasnu broda bu gi lonu ce'uxire zo'u
+ko gasnu broda bu といった感じで可能かと思う。
+
+たとえば、距離と角度を指定して、前進し左折する関数 broda bu を定義する。
+ko morji broda bu goi lonu ko bagi crakla la'u ce'uxipa gi carna la'u ce'uxire
+それを使用する。
+lirenono livomu zo'u ko gasnu broda bu
+それをx回くりかえす関数をつくる。
+ko morji brode bu goi lonu lonu lirenono livomu zo'u ko gasnu broda bu rapli ce'uxipa
+それをx回くりかえし fill する関数
+ko morji brodi bu goi lonu bagi
+	ko 
+	lonu lirenono livomu zo'u ko gasnu broda bu rapli ce'uxipa gi
+
+nu よりも du'u のほうがいいかもしれない。
+ko morji broda bu goi lodu'u ko bagi crakla la'u ce'uxipa gi carna la'u ce'uxire
+lirenono livomu zo'u ko gasnu broda bu
+ko morji brode bu goi lodu'u lonu lirenono livomu zo'u ko gasnu broda bu rapli ce'uxipa
+ko morji brodi bu goi lodu'u bagi
+	ko co'a clugau gi bagi
+	lonu lirenono livomu zo'u ko gasnu broda bu rapli ce'uxipa gi
+	ko ce'u clugau
+	
+
+まずは引数無しの関数を作るところからはじめよう。
+sumti のみの文は問題ないか。
+
+代入には goi を使うべきか du を使うべきか。
+本当ならば goi を使ったほうが良いのだろう。
+しかし、それだと selbri を何にするかという問題がある。
+co'e でもいいけど。
+
+ko morji broda bu goi lodu'u ko bagi crakla gi carna
+ko gasnu broda bu
+
+をためしてみよう。

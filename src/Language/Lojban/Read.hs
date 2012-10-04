@@ -10,7 +10,8 @@ module Language.Lojban.Read (
 
 import Language.Lojban.Parser hiding (
 	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
-	Time, KU, Linkargs, FIhO, NU, NA, LA, ZOI, ME, JOhI, SE)
+	Time, KU, Linkargs, FIhO, NU, NA, LA, ZOI, ME, JOhI, SE, GOI,
+	LerfuString)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
 import Data.Char
@@ -29,6 +30,7 @@ data Selbri
 	= Brivla String
 	| Linkargs Selbri Sumti
 	| NU Lojban
+	| DUhU Lojban
 	| NotImplementedSelbri String
 	| NA Selbri
 	| ME Sumti
@@ -45,6 +47,8 @@ data Sumti
 	| SFIhO Selbri Sumti
 	| ZOI String
 	| TUhA Sumti
+	| GOI Sumti Sumti
+	| LerfuString String
 	| NotImplementedSumti String
 	deriving (Show, Eq)
 
@@ -167,6 +171,9 @@ readSumti (TagSumti (P.FIhO (_, "fi'o", _) _ selbri _ _) sumti) =
 	SFIhO (readSelbri selbri) (readSumti sumti)
 readSumti (P.ZOI _ "zoi" ws _ _) = ZOI $ processZOI $ concat ws
 readSumti (P.LAhE_NAhE (_, "tu'a", _) _ _ _ s _ _) = TUhA $ readSumti s
+readSumti (P.OuterQuantifier _ s (Just (P.GOI (_, "goi", _) _ t _ _))) =
+	GOI (readSumti s) (readSumti t)
+readSumti (P.LerfuString ls _ _) = LerfuString $ concatMap (\(_, s, _) -> s) ls
 readSumti s = NotImplementedSumti $ "readSumti: " ++ show s
 
 processZOI :: String -> String
@@ -234,6 +241,7 @@ readSelbri (P.Brivla (_, b, _) _) = Brivla $ map toLower b
 readSelbri (P.Linkargs selbri (BE (_, "be", _) _ sumti _ _ _)) =
 	Linkargs (readSelbri selbri) (readSumti sumti)
 readSelbri (P.NU (_, "nu", _) _ _ _ bridi _ _) = NU $ process bridi
+readSelbri (P.NU (_, "du'u", _) _ _ _ bridi _ _) = DUhU $ process bridi
 readSelbri (P.NA (_, "na", _) _ s) = NA $ readSelbri s
 readSelbri (P.ME (_, "me", _) _ s _ _ _ _) = ME $ readSumti s
 readSelbri (P.SE (_, se, _) _ s) = SE (fromJust $ lookup se seList) $ readSelbri s

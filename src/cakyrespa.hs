@@ -7,7 +7,11 @@ import Text.XML.YJSVG
 import Language.Lojban.Read
 
 import System.Environment
+import System.IO.Unsafe
 import Data.Maybe
+import Data.IORef
+import Data.IORef.Tools
+import Control.Applicative
 
 main :: IO ()
 main = do
@@ -30,6 +34,8 @@ cmd = pcmd . readLojban
 pcmd p = case p of
 	(Vocative "co'o") -> COhO
 	(TenseGI "ba" b c) -> Commands (pcmd b) (pcmd c)
+	b@(Bridi (Brivla "gasnu") s) -> fromMaybe (Unknown b) $ readGasnu s
+	b@(Bridi (Brivla "morji") s) -> fromMaybe (Unknown b) $ readMorji s
 	b@(Bridi (Brivla "klama") s) -> fromMaybe (Unknown b) $ readKlama s
 	b@(Bridi (Brivla "galfi") s) -> fromMaybe (Unknown b) $ readGalfi s
 	b@(Bridi (Brivla "tcidu") s) -> fromMaybe (Unknown b) $ readTcidu s
@@ -47,6 +53,16 @@ pcmd p = case p of
 	b@(Bridi (NA (Brivla "pilno")) s) -> fromMaybe (Unknown b) $ readNAPilno s
 	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
 	r -> Unknown r
+
+readGasnu s = do
+	KOhA "ko" <- lookup (FA 1) s
+	LerfuString cmene <- lookup (FA 2) s
+	return $ GASNU cmene []
+
+readMorji s = do
+	KOhA "ko" <- lookup (FA 1) s
+	GOI (LerfuString cmene) (LO (DUhU fasnu) _) <- lookup (FA 2) s
+	return $ MORJI cmene $ const $ pcmd fasnu
 
 readKlama s = do
 	KOhA "ko" <- lookup (FA 1) s
@@ -201,6 +217,12 @@ readCarna s = do
 		"pritu" -> return $ PRITU d
 		_ -> fail "bad"
 
+data Argument
+	= ADouble Double
+	| AInt Int
+	| ACommand Command
+--	deriving Show
+
 data Command
 	= KLAMA Double Double
 	| CRAKLA Double | RIXYKLA Double
@@ -222,9 +244,19 @@ data Command
 	| SAVEASSVG FilePath
 	| SAVEASCAK FilePath
 	| READFILE FilePath
-	| COhO | Unknown Lojban | ParseErrorC
-	| UnknownSelpli Sumti
-	deriving Show
+	| MORJI String ([Argument] -> Command)
+	| GASNU String [Argument]
+	| COhO | Unknown Lojban | ParseErrorC | UnknownSelpli Sumti
+	| ErrorC String
+--	deriving Show
+
+type Table = [(String, [Argument] -> Command)]
+theTable :: IORef Table
+theTable = unsafePerformIO $ newIORef []
+morji :: String -> ([Argument] -> Command) -> IO ()
+morji cmene fasnu = atomicModifyIORef_ theTable ((cmene, fasnu) :)
+tcidu :: String -> IO (Maybe ([Argument] -> Command))
+tcidu cmene = lookup cmene <$> readIORef theTable
 
 data LR = L | R | BadLR deriving Show
 
@@ -250,6 +282,11 @@ processInput _ _ COhO = return False
 processInput f t (Commands c d) = processInput f t c >> processInput f t d
 processInput f t (Repeat n c) = sequence_ (replicate n (processInput f t c)) >>
 	return True
+processInput f t (MORJI cmene fasnu) = morji cmene fasnu >> return True
+processInput f t (GASNU cmene sumti) = do
+	mfasnu <- tcidu cmene
+	flip (maybe $ processInput f t $ ErrorC $ "not defined: " ++ cmene) mfasnu $
+		\fasnu -> processInput f t $ fasnu sumti
 processInput _ t (SAVEASSVG fp) = do
 	w <- windowWidth t
 	h <- windowHeight t
@@ -258,14 +295,17 @@ processInput _ t (SAVEASSVG fp) = do
 	return True
 processInput _ t (SAVEASCAK fp) = inputs t >>= writeFile fp . show >> return True
 processInput _ t (READFILE fp) = readFile fp >>= runInputs t . read >> return True
-processInput f _ u@(Unknown _) = do
+processInput f _ (Unknown u) = do
 	outputString f ".i mi na jimpe"
-	print u
+	putStr "Unknown " >> print u
 	return True
-processInput f _ u@(UnknownSelpli _) = do
+processInput f _ (UnknownSelpli us) = do
 	outputString f ".i mi na djuno lo bi'unai selpli"
-	print u
+	putStr "Unknown " >> print us
 	return True
 processInput f _ ParseErrorC = do
 	outputString f ".i di'u na drani fo lo gerna"
+	return True
+processInput f _ (ErrorC str) = do
+	putStrLn $ "error: " ++ str
 	return True
