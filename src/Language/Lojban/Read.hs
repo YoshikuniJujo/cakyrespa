@@ -87,9 +87,9 @@ processSE (Bridi (SE n selbri) ss) = processSE $
 processSE l = l
 
 processCEhU :: Int -> [(Tag, Sumti)] -> [(Tag, Sumti)]
-processCEhU n [] = []
+processCEhU _ [] = []
 processCEhU n ((t, CEhUPre) : rest) = (t, CEhU n) : processCEhU (n + 1) rest
-processCEhU n ((t, (LO s (Just (POI (Bridi (ME CEhUPre) ss))))) : rest) =
+processCEhU n ((t, LO s (Just (POI (Bridi (ME CEhUPre) ss)))) : rest) =
 	(t, LO s $ Just $ POI $ Bridi (ME $ CEhU n) ss) : processCEhU (n + 1) rest
 processCEhU n (s : rest) = s : processCEhU n rest
 
@@ -98,8 +98,8 @@ countc = countCEhU 0 . (\(Bridi _ s) -> s) . process'
 
 countCEhU :: Int -> [(Tag, Sumti)] -> Int
 countCEhU n [] = n
-countCEhU n ((t, CEhUPre) : rest) = countCEhU (n + 1) rest
-countCEhU n ((t, (LO s (Just (POI (Bridi (ME CEhUPre) ss))))) : rest) =
+countCEhU n ((_, CEhUPre) : rest) = countCEhU (n + 1) rest
+countCEhU n ((_, LO _ (Just (POI (Bridi (ME CEhUPre) _)))) : rest) =
 	countCEhU (n + 1) rest
 countCEhU n (_ : rest) = countCEhU n rest
 
@@ -109,6 +109,7 @@ flipTag n (FA f)
 	| f == n = FA 1
 flipTag _ t = t
 
+process :: Int -> Text -> Lojban
 process n s = case process' s of
 	Bridi selbri terms -> Bridi selbri (processCEhU n terms)
 	r -> r
@@ -135,7 +136,7 @@ process' (TermsBridiTail ss _ _
 	TenseGI tense
 		(processSE $ process 1 $ TermsBridiTail ss undefined undefined t)
 		(processSE $ process (1 +
-			(countc $ TermsBridiTail ss undefined undefined t)) $
+			countc (TermsBridiTail ss undefined undefined t)) $
 			TermsBridiTail ss undefined undefined u)
 process' (GekSentence
 	(STagGik
@@ -192,7 +193,8 @@ readSumti :: P.Sumti -> Sumti
 readSumti (P.KOhA (_, "ce'u", _) [XINumber (_, "xi", _) _ [([], pa, [])] _]) =
 	CEhU $ round $ paToInt [pa]
 readSumti (P.KOhA (_, "ce'u", _) []) = CEhUPre
-readSumti s@(P.KOhA (_, "ce'u", _) f) = NotImplementedSumti $ show s
+readSumti s@(P.KOhA (_, "ce'u", _) f) =
+	NotImplementedSumti $ show s ++ " " ++ show f
 readSumti (P.KOhA (_, k, _) _) = KOhA k
 readSumti (LALE (_, "lo", _) _ st _ _) = LO selbri relative
 	where (selbri, relative) = readSumtiTail st
@@ -216,6 +218,8 @@ readSumti s = NotImplementedSumti $ "readSumti: " ++ show s
 processZOI :: String -> String
 processZOI ('.' : str) = let ('.' : s) = reverse str in
 	dropWhile isSpace $ reverse $ dropWhile isSpace s
+processZOI str = let ('.' : s) = reverse str in
+	dropWhile isSpace $ reverse $ dropWhile isSpace s
 
 readMex :: Operand -> Mex
 readMex (P.Number n _ _) = readNumber n
@@ -238,6 +242,7 @@ paToInt :: [String] -> Double
 paToInt ("ni'u" : pas) = - (pti $ reverse $ processKIhO pas)
 paToInt pas = pti $ reverse $ processKIhO pas
 
+pti :: [String] -> Double
 pti [] = 0
 pti (p : rest) = fromJust (lookup' p paList) + 10 * pti rest
 
@@ -284,6 +289,7 @@ readSelbri (P.ME (_, "me", _) _ s _ _ _ _) = ME $ readSumti s
 readSelbri (P.SE (_, se, _) _ s) = SE (fromJust $ lookup se seList) $ readSelbri s
 readSelbri s = NotImplementedSelbri $ "readSelbri: " ++ show s
 
+seList :: [(String, Int)]
 seList = [
 	("se", 2),
 	("te", 3),

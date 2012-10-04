@@ -39,8 +39,7 @@ pcmd p = case p of
 	Prenex ss b -> const $ CommandList $ do
 		rss <- mapM sumtiToArgument ss
 		return $ pcmd b rss
-	b@(Bridi (Brivla "gasnu") s) ->
-		\args -> fromMaybe (Unknown b) $ readGasnu s args
+	b@(Bridi (Brivla "gasnu") s) -> fromMaybe (Unknown b) . readGasnu s
 	b@(Bridi (Brivla "morji") s) -> const $ fromMaybe (Unknown b) $ readMorji s
 	b@(Bridi (Brivla "klama") s) -> const $ fromMaybe (Unknown b) $ readKlama s
 	b@(Bridi (Brivla "galfi") s) -> const $ fromMaybe (Unknown b) $ readGalfi s
@@ -65,11 +64,14 @@ updateReaders reader text = do
 	c <- reader text
 	return $ const c
 
+readGasnu :: [(Tag, Sumti)] -> [Argument] -> Maybe Command
 readGasnu s a = do
 	KOhA "ko" <- lookup (FA 1) s
 	LerfuString cmene <- lookup (FA 2) s
 	return $ GASNU cmene a
 
+readMorji, readKlama, readGalfi, readTcidu, readRejgau ::
+	[(Tag, Sumti)] -> Maybe Command
 readMorji s = do
 	KOhA "ko" <- lookup (FA 1) s
 	GOI (LerfuString cmene) (LO (DUhU fasnu) _) <- lookup (FA 2) s
@@ -99,7 +101,7 @@ readRejgau s = do
 	case tai of
 		LA (Right (Brivla "cakyrespa")) -> return $ SAVEASCAK fp
 		LA (Left "syvygyd") -> return $ SAVEASSVG fp
-		s -> error $ show s
+		_ -> error $ show tai
 
 readViska :: [(Tag, Sumti)] -> Maybe Command
 readViska s = do
@@ -125,7 +127,7 @@ readCisni s = do
 readXruti :: [(Tag, Sumti)] -> Maybe Command
 readXruti s = do
 	KOhA "ko" <- lookup (FA 1) s
-	return $ XRUTI
+	return XRUTI
 
 readRapli :: [(Tag, Sumti)] -> Maybe Command
 readRapli s = do
@@ -168,7 +170,7 @@ readPilno s = do
 		LO (Linkargs (Brivla "penbi") (LO (Brivla skari) _)) _ -> do
 			(r, g, b) <- lookup skari skaste
 			return $ const $ PEBYSKA r g b
-		LO (Brivla "penbi") (Just (POI (Bridi (ME me) []))) -> do
+		LO (Brivla "penbi") (Just (POI (Bridi (ME me) []))) ->
 			case me of
 				LO (Brivla skari) _ -> do
 					(r, g, b) <- lookup skari skaste
@@ -178,6 +180,7 @@ readPilno s = do
 						skari <- getALO args i
 						pebska <- mapM colorNameToPEBYSKA skari
 						return $ CommandList pebska
+				_ -> return $ const $ ErrorC $ "bad penbi: " ++ show me
 		LO (Brivla "burcu") (Just (POI (Bridi (Brivla skari) []))) -> do
 			(r, g, b) <- lookup skari skaste
 			return $ const $ BURSKA r g b
@@ -286,6 +289,7 @@ data Argument
 	| ACons Argument Argument
 --	deriving Show
 
+sumtiToArgument :: Sumti -> [Argument]
 sumtiToArgument (LI (Number n)) = [ADouble n]
 sumtiToArgument (LO (Brivla s) _) = [ALO s]
 sumtiToArgument (STense "ba" s_ t_) =
@@ -353,9 +357,9 @@ processInput _ _ COhO = return False
 processInput f t (Commands c d) = processInput f t c >> processInput f t d
 processInput f t (CommandList cl) =
 	mapM_ (processInput f t) cl >> return True
-processInput f t (Repeat n c) = sequence_ (replicate n (processInput f t c)) >>
+processInput f t (Repeat n c) = replicateM_ n (processInput f t c) >>
 	return True
-processInput f t (MORJI cmene fasnu) = morji cmene fasnu >> return True
+processInput _ _ (MORJI cmene fasnu) = morji cmene fasnu >> return True
 processInput f t (GASNU cmene sumti) = do
 	mfasnu <- tcidu cmene
 	flip (maybe $ processInput f t $ ErrorC $ "not defined: " ++ cmene) mfasnu $
@@ -379,6 +383,6 @@ processInput f _ (UnknownSelpli us) = do
 processInput f _ ParseErrorC = do
 	outputString f ".i di'u na drani fo lo gerna"
 	return True
-processInput f _ (ErrorC str) = do
+processInput _ _ (ErrorC str) = do
 	putStrLn $ "error: " ++ str
 	return True
