@@ -12,13 +12,15 @@ import Language.Lojban.Read(
 	readLojban,
 	Lojban(..), Selbri(..), Tag(..), Sumti(..), RelativeClause(..), Mex(..))
 
-import System.Environment
-import System.IO.Unsafe
-import Control.Applicative
-import Control.Monad
-import Data.Maybe
-import Data.IORef
-import Data.IORef.Tools
+import System.Environment(getProgName, getArgs)
+import System.IO.Unsafe(unsafePerformIO)
+import Control.Applicative((<$>))
+import Control.Monad(when, replicateM_)
+import Data.Maybe(fromMaybe)
+import Data.IORef(IORef, newIORef, readIORef)
+import Data.IORef.Tools(atomicModifyIORef_)
+
+--------------------------------------------------------------------------------
 
 main :: IO ()
 main = do
