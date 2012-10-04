@@ -53,7 +53,7 @@ pcmd p = case p of
 	b@(Bridi (Brivla "crakla") s) -> fromMaybe (const $ Unknown b) $ readCrakla s
 	b@(Bridi (Brivla "rixykla") s) -> const $ fromMaybe (Unknown b) $ readRixykla s
 	b@(Bridi (Brivla "pilno") s) ->
-		const $ fromMaybe (Unknown b) $ readBAPilno s
+		fromMaybe (const $ Unknown b) $ readBAPilno s
 	b@(Bridi (NA (Brivla "pilno")) s) -> const $ fromMaybe (Unknown b) $ readNAPilno s
 	b@(Bridi (Brivla "clugau") s) -> const $ fromMaybe (Unknown b) $ readClugau s
 	r -> const $ Unknown r
@@ -139,41 +139,47 @@ readClugau s = do
 		(False, True) -> return COhUCLUGAU
 		_ -> fail "bad"
 
-readBAPilno :: [(Tag, Sumti)] -> Maybe Command
+readBAPilno :: [(Tag, Sumti)] -> Maybe ([Argument] -> Command)
 readBAPilno s = do
 	cm <- readPilno s
 	if (Time ["ba"], KU) `elem` s then return cm
-		else return $ Commands cm PILNOLOPENBI
+		else return $ \args -> Commands (cm args) PILNOLOPENBI
 
-readPilno :: [(Tag, Sumti)] -> Maybe Command
+readPilno :: [(Tag, Sumti)] -> Maybe ([Argument] -> Command)
 readPilno s = do
 	KOhA "ko" <- lookup (FA 1) s
 	selpli <- lookup (FA 2) s
 	case selpli of
 		LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
-			(FA 1, LI (Number size))]))) -> return $ PEBYCISNI size
+			(FA 1, LI (Number size))]))) ->
+			return $ const $ PEBYCISNI size
 		LO (Linkargs (Brivla "penbi") (SFIhO (Brivla "cisni") (LI
-			(Number size)))) _ -> return $ PEBYCISNI size
+			(Number size)))) _ -> return $ const $ PEBYCISNI size
 		LO (Brivla "penbi") (Just (POI (Bridi (Brivla skari) []))) -> do
 			(r, g, b) <- lookup skari skaste
-			return $ PEBYSKA r g b
+			return $ const $ PEBYSKA r g b
 		LO (Linkargs (Brivla "penbi") (LO (Brivla skari) _)) _ -> do
 			(r, g, b) <- lookup skari skaste
-			return $ PEBYSKA r g b
+			return $ const $ PEBYSKA r g b
 		LO (Brivla "penbi") (Just (POI (Bridi (ME me) []))) -> do
 			case me of
 				LO (Brivla skari) _ -> do
 					(r, g, b) <- lookup skari skaste
-					return $ PEBYSKA r g b
+					return $ const $ PEBYSKA r g b
+				CEhU i -> return $ \args ->
+					fromMaybe (ErrorC "bad args") $ do
+						skari <- getALO args i :: Maybe String
+						(r, g, b) <- lookup skari skaste
+						return $ PEBYSKA r g b :: Maybe Command
 		LO (Brivla "burcu") (Just (POI (Bridi (Brivla skari) []))) -> do
 			(r, g, b) <- lookup skari skaste
-			return $ BURSKA r g b
+			return $ const $ BURSKA r g b
 		LO (Linkargs (Brivla "burcu") (SFIhO (Brivla "skari") (LO
 			(Brivla skari) _))) _ -> do
 			(r, g, b) <- lookup skari skaste
-			return $ BURSKA r g b
-		LO (Brivla "penbi") Nothing -> return PILNOLOPENBI
-		_ -> return $ UnknownSelpli selpli
+			return $ const $ BURSKA r g b
+		LO (Brivla "penbi") Nothing -> return $ const PILNOLOPENBI
+		_ -> return $ const $ UnknownSelpli selpli
 
 skaste :: [(String, (Int, Int, Int))]
 skaste = [
@@ -249,16 +255,24 @@ readCarna s = do
 getDouble :: [Argument] -> Int -> Maybe Double
 getDouble args i = do
 	when (length args < i) $ fail "bad"
-	ADouble d <- return $ args !! i
+	ADouble d <- return $ args !! (i - 1)
 	return d
+
+getALO :: [Argument] -> Int -> Maybe String
+getALO args i = do
+	when (length args < i) $ fail "bad"
+	ALO s <- return $ args !! (i - 1)
+	return s
 
 data Argument
 	= ADouble Double
 	| AInt Int
 	| ACommand Command
+	| ALO String
 --	deriving Show
 
 sumtiToArgument (LI (Number n)) = ADouble n
+sumtiToArgument (LO (Brivla s) _) = ALO s
 
 data Command
 	= KLAMA Double Double
