@@ -167,4 +167,9 @@ lo xunre zo'u ko gasnu broda bu
 次は mapM_ に当たるやりかた。
 
 ko morji broda bu goi lodu'u ko bagi pilno lo penbi poi me ce'u gi crakla
-lo bagi loxunre gibagi lopelxu gi locrino zo'u ko gasnu broda bu
+bagi loxunre gibagi lopelxu gi locrino zo'u ko gasnu broda bu
+
+さらに無名関数的なものを作ろう。
+
+bagi loxunre gibagi lopelxu gi locrino zo'u ko bagi pilno lo penbi poi me ce'u
+ gi crakla
