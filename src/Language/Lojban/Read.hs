@@ -76,7 +76,7 @@ data Tag
 	deriving (Show, Eq)
 
 readLojban :: String -> Lojban
-readLojban = processSE . either (ParseError . show) process . parse
+readLojban = processSE . either (ParseError . show) (process 1) . parse
 
 processSE :: Lojban -> Lojban
 processSE (Bridi (NA (SE n selbri)) ss) = processSE $
@@ -92,14 +92,24 @@ processCEhU n ((t, (LO s (Just (POI (Bridi (ME CEhUPre) ss))))) : rest) =
 	(t, LO s $ Just $ POI $ Bridi (ME $ CEhU n) ss) : processCEhU (n + 1) rest
 processCEhU n (s : rest) = s : processCEhU n rest
 
+countc :: Text -> Int
+countc = countCEhU 0 . (\(Bridi _ s) -> s) . process'
+
+countCEhU :: Int -> [(Tag, Sumti)] -> Int
+countCEhU n [] = n
+countCEhU n ((t, CEhUPre) : rest) = countCEhU (n + 1) rest
+countCEhU n ((t, (LO s (Just (POI (Bridi (ME CEhUPre) ss))))) : rest) =
+	countCEhU (n + 1) rest
+countCEhU n (_ : rest) = countCEhU n rest
+
 flipTag :: Int -> Tag -> Tag
 flipTag n (FA f)
 	| f == 1 = FA n
 	| f == n = FA 1
 flipTag _ t = t
 
-process s = case process' s of
-	Bridi selbri terms -> Bridi selbri (processCEhU 1 terms)
+process n s = case process' s of
+	Bridi selbri terms -> Bridi selbri (processCEhU n terms)
 	r -> r
 
 process' :: Text -> Lojban
@@ -107,8 +117,8 @@ process' (TopText _ _ [VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
 	Vocative v
 process' (IText_1 _ _ _ [VocativeSumti [(_, v, _)] _ _] Nothing) = Vocative v
 process' (IText_1 _ _ _ fs@(_ : _) Nothing) = Free fs
-process' (IText_1 _ _ _ _ (Just t)) = process t
-process' (P.Prenex ss (_, "zo'u", _) _ t) = Prenex (map readSumti ss) $ process t
+process' (IText_1 _ _ _ _ (Just t)) = process 1 t
+process' (P.Prenex ss (_, "zo'u", _) _ t) = Prenex (map readSumti ss) $ process 1 t
 process' (TermsBridiTail ss _ _ (SelbriTailTerms selbri ts _ _)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss ts
 process' (TermsBridiTail ss _ _ (P.Selbri selbri)) =
@@ -120,16 +130,18 @@ process' (TermsBridiTail ss _ _
 			((_, "gi", _), _, _))
 		t ((_, "gi", _), _, _) u _ _ _)) =
 	TenseGI tense
-		(process $ TermsBridiTail ss undefined undefined t)
-		(process $ TermsBridiTail ss undefined undefined u)
+		(process 1 $ TermsBridiTail ss undefined undefined t)
+		(process (1 +
+			(countc $ TermsBridiTail ss undefined undefined t)) $
+			TermsBridiTail ss undefined undefined u)
 process' (GekSentence
 	(STagGik
 		(P.Time _ [((_, tense, _), _, _)] _ _)
 		((_, "gi", _), _, _))
 	t ((_, "gi", _), _, _) u _ _ _) =
 	TenseGI tense
-		(process $ t)
-		(process $ u)
+		(process 1 t)
+		(process 1 u)
 process' (P.Selbri selbri) = Bridi (readSelbri selbri) []
 process' (P.SelbriTailTerms selbri ts _ _) =
 	Bridi (readSelbri selbri) $ processTagSumti [] ts
@@ -252,15 +264,15 @@ readSumtiTail st = (NotImplementedSelbri $ "readSumtiTail: " ++ show st, Nothing
 
 readRelativeClauses :: P.RelativeClause -> RelativeClause
 readRelativeClauses (NOI (_, "poi", _) _ bridi _ _) =
-	POI $ process bridi
+	POI $ process 1 bridi
 readRelativeClauses r = Debug $  show r
 
 readSelbri :: P.Selbri -> Selbri
 readSelbri (P.Brivla (_, b, _) _) = Brivla $ map toLower b
 readSelbri (P.Linkargs selbri (BE (_, "be", _) _ sumti _ _ _)) =
 	Linkargs (readSelbri selbri) (readSumti sumti)
-readSelbri (P.NU (_, "nu", _) _ _ _ bridi _ _) = NU $ process bridi
-readSelbri (P.NU (_, "du'u", _) _ _ _ bridi _ _) = DUhU $ process bridi
+readSelbri (P.NU (_, "nu", _) _ _ _ bridi _ _) = NU $ process 1 bridi
+readSelbri (P.NU (_, "du'u", _) _ _ _ bridi _ _) = DUhU $ process 1 bridi
 readSelbri (P.NA (_, "na", _) _ s) = NA $ readSelbri s
 readSelbri (P.ME (_, "me", _) _ s _ _ _ _) = ME $ readSumti s
 readSelbri (P.SE (_, se, _) _ s) = SE (fromJust $ lookup se seList) $ readSelbri s
