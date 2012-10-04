@@ -5,7 +5,7 @@ import Graphics.UI.GLUT(initialize, mainLoop)
 import Graphics.UI.GLUT.Turtle(
 	Field, openField, prompt, outputString, oninputtext,
 	Turtle, newTurtle, runInputs, inputs, getSVG,
-	goto, forward, backward, left, right, beginfill, endfill, undo,
+	goto, forward, backward, left, right, beginfill, endfill, undo, notundo,
 	penup, pendown, hideturtle, showturtle, shape, shapesize,
 	pensize, pencolor, fillcolor, bgcolor, windowWidth, windowHeight)
 import Language.Lojban.Read(
@@ -28,12 +28,11 @@ main = do
 	rawArgs <- getArgs
 	_args <- initialize prgName rawArgs
 	f <- openField "cakyrespa" 640 480
-	prompt f ".i "
 	t <- newTurtle f
---	pencolor t ((255, 255, 255) :: (Int, Int, Int))
---	fillcolor t ((255, 255, 255) :: (Int, Int, Int))
+	prompt f ".i "
 	shape t "turtle"
 	shapesize t 3 3
+	notundo t
 	oninputtext f (processInput f t . cmd)
 	mainLoop
 
