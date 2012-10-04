@@ -12,6 +12,7 @@ import Data.Maybe
 import Data.IORef
 import Data.IORef.Tools
 import Control.Applicative
+import Control.Monad
 
 main :: IO ()
 main = do
@@ -48,7 +49,7 @@ pcmd p = case p of
 	b@(Bridi (Brivla "cisni") s) -> const $ fromMaybe (Unknown b) $ readCisni s
 	b@(Bridi (Brivla "xruti") s) -> const $ fromMaybe (Unknown b) $ readXruti s
 	b@(Bridi (Brivla "rapli") s) -> const $ fromMaybe (Unknown b) $ readRapli s
-	b@(Bridi (Brivla "carna") s) -> const $fromMaybe (Unknown b) $ readCarna s
+	b@(Bridi (Brivla "carna") s) -> fromMaybe (const $ Unknown b) $ readCarna s
 	b@(Bridi (Brivla "crakla") s) -> fromMaybe (const $ Unknown b) $ readCrakla s
 	b@(Bridi (Brivla "rixykla") s) -> const $ fromMaybe (Unknown b) $ readRixykla s
 	b@(Bridi (Brivla "pilno") s) ->
@@ -226,16 +227,25 @@ readRixykla s = do
 	KOhA "ko" <- lookup (FA 1) s
 	return $ RIXYKLA $ maybe 100 (\(Left d) -> d) $ readLAhU2 s
 
-readCarna :: [(Tag, Sumti)] -> Maybe Command
+readCarna :: [(Tag, Sumti)] -> Maybe ([Argument] -> Command)
 readCarna s = do
 	KOhA "ko" <- lookup (FA 1) s
 	let	LO (Brivla lr) _ =
 			fromMaybe (LO (Brivla "zunle") Nothing) $ lookup (FA 3) s
-		d = maybe 90 (\(Left d) -> d) $ readLAhU2 s
+--		d = maybe 90 (\(Left d) -> d) $ readLAhU2 s
+		d = fromMaybe (Left 90) $ readLAhU2 s
 	case lr of
-		"zunle" -> return $ ZUNLE d
-		"pritu" -> return $ PRITU d
+		"zunle" -> return $ flip (either $ const . ZUNLE) d $ \i args ->
+			maybe (ErrorC "bad args") ZUNLE $ getDouble args i
+		"pritu" -> return $ flip (either $ const . PRITU) d $ \i args ->
+			maybe (ErrorC "bad args") PRITU $ getDouble args i
 		_ -> fail "bad"
+
+getDouble :: [Argument] -> Int -> Maybe Double
+getDouble args i = do
+	when (length args < i) $ fail "bad"
+	ADouble d <- return $ args !! i
+	return d
 
 data Argument
 	= ADouble Double
