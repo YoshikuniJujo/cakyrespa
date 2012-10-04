@@ -11,7 +11,7 @@ module Language.Lojban.Read (
 import Language.Lojban.Parser hiding (
 	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
 	Time, KU, Linkargs, FIhO, NU, NA, LA, ZOI, ME, JOhI, SE, GOI,
-	LerfuString)
+	LerfuString, Prenex)
 import qualified Language.Lojban.Parser as P
 import Data.Maybe
 import Data.Char
@@ -22,6 +22,7 @@ data Lojban
 	| TenseGI String Lojban Lojban
 	| Vocative String
 	| Free [Free]
+	| Prenex [Sumti] Lojban
 	| ParseError String
 	| NotImplemented String
 	deriving (Show, Eq)
@@ -39,6 +40,8 @@ data Selbri
 
 data Sumti
 	= KOhA String
+	| CEhU Int
+	| CEhUPre
 	| LA (Either String Selbri)
 	| LE Selbri
 	| LO Selbri (Maybe RelativeClause)
@@ -82,23 +85,33 @@ processSE (Bridi (SE n selbri) ss) = processSE $
 	Bridi selbri $ map (first $ flipTag n) ss
 processSE l = l
 
+processCEhU :: Int -> [(Tag, Sumti)] -> [(Tag, Sumti)]
+processCEhU n [] = []
+processCEhU n ((t, CEhUPre) : rest) = (t, CEhU n) : processCEhU (n + 1) rest
+processCEhU n (s : rest) = s : processCEhU n rest
+
 flipTag :: Int -> Tag -> Tag
 flipTag n (FA f)
 	| f == 1 = FA n
 	| f == n = FA 1
 flipTag _ t = t
 
-process :: Text -> Lojban
-process (TopText _ _ [VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
+process s = case process' s of
+	Bridi selbri terms -> Bridi selbri (processCEhU 1 terms)
+	r -> r
+
+process' :: Text -> Lojban
+process' (TopText _ _ [VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
 	Vocative v
-process (IText_1 _ _ _ [VocativeSumti [(_, v, _)] _ _] Nothing) = Vocative v
-process (IText_1 _ _ _ fs@(_ : _) Nothing) = Free fs
-process (IText_1 _ _ _ _ (Just t)) = process t
-process (TermsBridiTail ss _ _ (SelbriTailTerms selbri ts _ _)) =
+process' (IText_1 _ _ _ [VocativeSumti [(_, v, _)] _ _] Nothing) = Vocative v
+process' (IText_1 _ _ _ fs@(_ : _) Nothing) = Free fs
+process' (IText_1 _ _ _ _ (Just t)) = process t
+process' (P.Prenex ss (_, "zo'u", _) _ t) = Prenex (map readSumti ss) $ process t
+process' (TermsBridiTail ss _ _ (SelbriTailTerms selbri ts _ _)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss ts
-process (TermsBridiTail ss _ _ (P.Selbri selbri)) =
+process' (TermsBridiTail ss _ _ (P.Selbri selbri)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss []
-process (TermsBridiTail ss _ _
+process' (TermsBridiTail ss _ _
 	(GekSentence
 		(STagGik
 			(P.Time _ [((_, tense, _), _, _)] _ _)
@@ -107,7 +120,7 @@ process (TermsBridiTail ss _ _
 	TenseGI tense
 		(process $ TermsBridiTail ss undefined undefined t)
 		(process $ TermsBridiTail ss undefined undefined u)
-process (GekSentence
+process' (GekSentence
 	(STagGik
 		(P.Time _ [((_, tense, _), _, _)] _ _)
 		((_, "gi", _), _, _))
@@ -115,10 +128,10 @@ process (GekSentence
 	TenseGI tense
 		(process $ t)
 		(process $ u)
-process (P.Selbri selbri) = Bridi (readSelbri selbri) []
-process (P.SelbriTailTerms selbri ts _ _) =
+process' (P.Selbri selbri) = Bridi (readSelbri selbri) []
+process' (P.SelbriTailTerms selbri ts _ _) =
 	Bridi (readSelbri selbri) $ processTagSumti [] ts
-process t = NotImplemented $ "process: " ++ show t
+process' t = NotImplemented $ "process: " ++ show t
 
 processTagSumti :: [P.Sumti] -> [P.Sumti] -> [(Tag, Sumti)]
 processTagSumti s t = let
@@ -159,6 +172,10 @@ faList = [
  ]
 
 readSumti :: P.Sumti -> Sumti
+readSumti (P.KOhA (_, "ce'u", _) [XINumber (_, "xi", _) _ [([], pa, [])] _]) =
+	CEhU $ round $ paToInt [pa]
+readSumti (P.KOhA (_, "ce'u", _) []) = CEhUPre
+readSumti s@(P.KOhA (_, "ce'u", _) f) = NotImplementedSumti $ show s
 readSumti (P.KOhA (_, k, _) _) = KOhA k
 readSumti (LALE (_, "lo", _) _ st _ _) = LO selbri relative
 	where (selbri, relative) = readSumtiTail st

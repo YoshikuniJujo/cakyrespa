@@ -29,40 +29,48 @@ main = do
 	mainLoop
 
 cmd :: String -> Command
-cmd = pcmd . readLojban
+cmd = flip pcmd [] . readLojban
 
+pcmd :: Lojban -> [Argument] -> Command
 pcmd p = case p of
-	(Vocative "co'o") -> COhO
-	(TenseGI "ba" b c) -> Commands (pcmd b) (pcmd c)
-	b@(Bridi (Brivla "gasnu") s) -> fromMaybe (Unknown b) $ readGasnu s
-	b@(Bridi (Brivla "morji") s) -> fromMaybe (Unknown b) $ readMorji s
-	b@(Bridi (Brivla "klama") s) -> fromMaybe (Unknown b) $ readKlama s
-	b@(Bridi (Brivla "galfi") s) -> fromMaybe (Unknown b) $ readGalfi s
-	b@(Bridi (Brivla "tcidu") s) -> fromMaybe (Unknown b) $ readTcidu s
-	b@(Bridi (Brivla "rejgau") s) -> fromMaybe (Unknown b) $ readRejgau s
-	b@(Bridi (Brivla "viska") s) -> fromMaybe (Unknown b) $ readViska s
-	b@(Bridi (NA (Brivla "viska")) s) -> fromMaybe (Unknown b) $ readNAViska s
-	b@(Bridi (Brivla "cisni") s) -> fromMaybe (Unknown b) $ readCisni s
-	b@(Bridi (Brivla "xruti") s) -> fromMaybe (Unknown b) $ readXruti s
-	b@(Bridi (Brivla "rapli") s) -> fromMaybe (Unknown b) $ readRapli s
-	b@(Bridi (Brivla "carna") s) -> fromMaybe (Unknown b) $ readCarna s
-	b@(Bridi (Brivla "crakla") s) -> fromMaybe (Unknown b) $ readCrakla s
-	b@(Bridi (Brivla "rixykla") s) -> fromMaybe (Unknown b) $ readRixykla s
+	Vocative "co'o" -> const COhO
+	TenseGI "ba" b c -> \args -> Commands (pcmd b args) (pcmd c args)
+	Prenex ss b -> const $ pcmd b $ map sumtiToArgument ss
+	b@(Bridi (Brivla "gasnu") s) ->
+		\args -> fromMaybe (Unknown b) $ readGasnu s args
+	b@(Bridi (Brivla "morji") s) -> const $ fromMaybe (Unknown b) $ readMorji s
+	b@(Bridi (Brivla "klama") s) -> const $ fromMaybe (Unknown b) $ readKlama s
+	b@(Bridi (Brivla "galfi") s) -> const $ fromMaybe (Unknown b) $ readGalfi s
+	b@(Bridi (Brivla "tcidu") s) -> const $ fromMaybe (Unknown b) $ readTcidu s
+	b@(Bridi (Brivla "rejgau") s) -> const $ fromMaybe (Unknown b) $ readRejgau s
+	b@(Bridi (Brivla "viska") s) -> const $ fromMaybe (Unknown b) $ readViska s
+	b@(Bridi (NA (Brivla "viska")) s) -> const $ fromMaybe (Unknown b) $ readNAViska s
+	b@(Bridi (Brivla "cisni") s) -> const $ fromMaybe (Unknown b) $ readCisni s
+	b@(Bridi (Brivla "xruti") s) -> const $ fromMaybe (Unknown b) $ readXruti s
+	b@(Bridi (Brivla "rapli") s) -> const $ fromMaybe (Unknown b) $ readRapli s
+	b@(Bridi (Brivla "carna") s) -> const $fromMaybe (Unknown b) $ readCarna s
+	b@(Bridi (Brivla "crakla") s) -> fromMaybe (const $ Unknown b) $ readCrakla s
+	b@(Bridi (Brivla "rixykla") s) -> const $ fromMaybe (Unknown b) $ readRixykla s
 	b@(Bridi (Brivla "pilno") s) ->
-		fromMaybe (Unknown b) $ readBAPilno s
-	b@(Bridi (NA (Brivla "pilno")) s) -> fromMaybe (Unknown b) $ readNAPilno s
-	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
-	r -> Unknown r
+		const $ fromMaybe (Unknown b) $ readBAPilno s
+	b@(Bridi (NA (Brivla "pilno")) s) -> const $ fromMaybe (Unknown b) $ readNAPilno s
+	b@(Bridi (Brivla "clugau") s) -> const $ fromMaybe (Unknown b) $ readClugau s
+	r -> const $ Unknown r
 
-readGasnu s = do
+updateReaders :: (Lojban -> Maybe Command) -> Lojban -> Maybe ([Argument] -> Command)
+updateReaders reader text = do
+	c <- reader text
+	return $ const c
+
+readGasnu s a = do
 	KOhA "ko" <- lookup (FA 1) s
 	LerfuString cmene <- lookup (FA 2) s
-	return $ GASNU cmene []
+	return $ GASNU cmene a
 
 readMorji s = do
 	KOhA "ko" <- lookup (FA 1) s
 	GOI (LerfuString cmene) (LO (DUhU fasnu) _) <- lookup (FA 2) s
-	return $ MORJI cmene $ const $ pcmd fasnu
+	return $ MORJI cmene $ pcmd fasnu
 
 readKlama s = do
 	KOhA "ko" <- lookup (FA 1) s
@@ -120,7 +128,7 @@ readRapli :: [(Tag, Sumti)] -> Maybe Command
 readRapli s = do
 	LO (NU p) _ <- lookup (FA 1) s
 	LI (Number n) <- lookup (FA 2) s
-	return $ Repeat (round n) (pcmd p)
+	return $ Repeat (round n) (pcmd p [])
 
 readClugau :: [(Tag, Sumti)] -> Maybe Command
 readClugau s = do
@@ -191,27 +199,39 @@ skaste = [
 	("xunblabi", (255, 192, 203))	-- Pink
  ]
 
-readLAhU2 :: [(Tag, Sumti)] -> Maybe Double
+readLAhU2 :: [(Tag, Sumti)] -> Maybe (Either Double Int)
 readLAhU2 s = do
-	LI (Number d) <- lookup (BAI Nothing "la'u") s
-	return d
+	lahu <- lookup (BAI Nothing "la'u") s
+	case lahu of
+		LI (Number d) -> return $ Left d
+		CEhU i -> return $ Right i
+		_ -> fail "bad"
 
-readCrakla :: [(Tag, Sumti)] -> Maybe Command
+readCrakla :: [(Tag, Sumti)] -> Maybe ([Argument] -> Command)
 readCrakla s = do
 	KOhA "ko" <- lookup (FA 1) s
-	return $ CRAKLA $ fromMaybe 100 $ readLAhU2 s
+	return $ case readLAhU2 s of
+		Just (Left d) -> const $ CRAKLA d
+		Just (Right i) -> \args -> if length args < i
+			then ErrorC $ "too few args " ++ show i ++ " for " ++
+				show (length args)
+			else case args !! (i - 1) of
+				ADouble d -> CRAKLA d
+				_ -> ErrorC "bad argument"
+		_ -> const $ CRAKLA 100
+--	return $ const $ CRAKLA $ maybe 100 (\(Left d) -> d) $ readLAhU2 s
 
 readRixykla :: [(Tag, Sumti)] -> Maybe Command
 readRixykla s = do
 	KOhA "ko" <- lookup (FA 1) s
-	return $ RIXYKLA $ fromMaybe 100 $ readLAhU2 s
+	return $ RIXYKLA $ maybe 100 (\(Left d) -> d) $ readLAhU2 s
 
 readCarna :: [(Tag, Sumti)] -> Maybe Command
 readCarna s = do
 	KOhA "ko" <- lookup (FA 1) s
 	let	LO (Brivla lr) _ =
 			fromMaybe (LO (Brivla "zunle") Nothing) $ lookup (FA 3) s
-	 	d = fromMaybe 90 $ readLAhU2 s
+		d = maybe 90 (\(Left d) -> d) $ readLAhU2 s
 	case lr of
 		"zunle" -> return $ ZUNLE d
 		"pritu" -> return $ PRITU d
@@ -222,6 +242,8 @@ data Argument
 	| AInt Int
 	| ACommand Command
 --	deriving Show
+
+sumtiToArgument (LI (Number n)) = ADouble n
 
 data Command
 	= KLAMA Double Double

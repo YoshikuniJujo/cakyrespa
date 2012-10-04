@@ -124,3 +124,20 @@ ko morji broda bu goi lodu'u ko bagi crakla gi carna
 ko gasnu broda bu
 
 をためしてみよう。
+
+pcmd :: Lojban -> [Argument] -> Command
+とする必要がある。
+これは、ce'u が出てくるたびに、
+xi pa がなければ順番に、
+xi pa, xi re 等があればその順に [Argument] を参照するようにする。
+まずは Read.hs の readSumti で CEhU Int を読み込めるようにしよう。
+xi pa や xi re が無い場合にこれを、du'u 内での順番とすることができなくてはならない。
+つまり、du'u 内における Lojban 内での Sumti に順番をつける必要がある。
+まずは、CEhUPre としておいて、それをあとから processor にかけるのが良いかと思う。
+
+次は、
+
+ko morji broda bu goi lodu'u ko bagi crakla la'u ce'u gi carna
+li cinono zo'u ko gasnu broda bu
+
+を試してみようかな。
