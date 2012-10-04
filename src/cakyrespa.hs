@@ -1,18 +1,24 @@
 module Main where
 
-import Graphics.UI.GLUT hiding (R, Repeat)
-import Graphics.UI.GLUT.Turtle
-import Text.XML.YJSVG
-
-import Language.Lojban.Read
+import Text.XML.YJSVG(showSVG)
+import Graphics.UI.GLUT(initialize, mainLoop)
+import Graphics.UI.GLUT.Turtle(
+	Field, openField, prompt, outputString, oninputtext,
+	Turtle, newTurtle, runInputs, inputs, getSVG,
+	goto, forward, backward, left, right, beginfill, endfill, undo,
+	penup, pendown, hideturtle, showturtle, shape, shapesize,
+	pensize, pencolor, fillcolor, bgcolor, windowWidth, windowHeight)
+import Language.Lojban.Read(
+	readLojban,
+	Lojban(..), Selbri(..), Tag(..), Sumti(..), RelativeClause(..), Mex(..))
 
 import System.Environment
 import System.IO.Unsafe
+import Control.Applicative
+import Control.Monad
 import Data.Maybe
 import Data.IORef
 import Data.IORef.Tools
-import Control.Applicative
-import Control.Monad
 
 main :: IO ()
 main = do
