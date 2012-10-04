@@ -120,6 +120,8 @@ process' (IText_1 _ _ _ [VocativeSumti [(_, v, _)] _ _] Nothing) = Vocative v
 process' (IText_1 _ _ _ fs@(_ : _) Nothing) = Free fs
 process' (IText_1 _ _ _ _ (Just t)) = process 1 t
 process' (P.Prenex ss (_, "zo'u", _) _ t) = Prenex (map readSumti ss) $ process 1 t
+process' (P.PrenexSentence ss (_, "zo'u", _) _ t) =
+	Prenex (map readSumti ss) $ process 1 t
 process' (TermsBridiTail ss _ _ (SelbriTailTerms selbri ts _ _)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss ts
 process' (TermsBridiTail ss _ _ (P.Selbri selbri)) =
