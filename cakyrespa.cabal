@@ -2,7 +2,7 @@ build-type:	Simple
 cabal-version:	>= 1.6
 
 name:		cakyrespa
-version:	0.0.15
+version:	0.0.16
 stability:	Alpha
 license:	BSD3
 license-file:	LICENSE
