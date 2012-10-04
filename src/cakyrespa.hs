@@ -160,6 +160,11 @@ readPilno s = do
 		LO (Linkargs (Brivla "penbi") (LO (Brivla skari) _)) _ -> do
 			(r, g, b) <- lookup skari skaste
 			return $ PEBYSKA r g b
+		LO (Brivla "penbi") (Just (POI (Bridi (ME me) []))) -> do
+			case me of
+				LO (Brivla skari) _ -> do
+					(r, g, b) <- lookup skari skaste
+					return $ PEBYSKA r g b
 		LO (Brivla "burcu") (Just (POI (Bridi (Brivla skari) []))) -> do
 			(r, g, b) <- lookup skari skaste
 			return $ BURSKA r g b

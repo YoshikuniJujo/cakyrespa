@@ -88,6 +88,8 @@ processSE l = l
 processCEhU :: Int -> [(Tag, Sumti)] -> [(Tag, Sumti)]
 processCEhU n [] = []
 processCEhU n ((t, CEhUPre) : rest) = (t, CEhU n) : processCEhU (n + 1) rest
+processCEhU n ((t, (LO s (Just (POI (Bridi (ME CEhUPre) ss))))) : rest) =
+	(t, LO s $ Just $ POI $ Bridi (ME $ CEhU n) ss) : processCEhU (n + 1) rest
 processCEhU n (s : rest) = s : processCEhU n rest
 
 flipTag :: Int -> Tag -> Tag
