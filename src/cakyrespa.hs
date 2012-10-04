@@ -160,6 +160,11 @@ readPilno s = do
 		LO (Brivla "penbi") (Just (POI (Bridi (Brivla skari) []))) -> do
 			(r, g, b) <- lookup skari skaste
 			return $ const $ PEBYSKA r g b
+		LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
+			(FA 1, CEhU i)]))) -> return $ \args ->
+			fromMaybe (ErrorC "bad args") $ do
+				size <- getDouble args i
+				return $ PEBYCISNI size
 		LO (Linkargs (Brivla "penbi") (LO (Brivla skari) _)) _ -> do
 			(r, g, b) <- lookup skari skaste
 			return $ const $ PEBYSKA r g b
