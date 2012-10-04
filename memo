@@ -160,6 +160,11 @@ ko pilno lo penbi poi me lo xunre
 と言えるようにすることだ。
 そしたら、
 
-ko morji broda bu goi lodu'u ko bagi pilno lo penbi poi me ce'u
+ko morji broda bu goi lodu'u ko pilno lo penbi poi me ce'u
 lo xunre zo'u ko gasnu broda bu
 とできる。
+
+次は mapM_ に当たるやりかた。
+
+ko morji broda bu goi lodu'u ko bagi pilno lo penbi poi me ce'u gi crakla
+lo bagi loxunre gibagi lopelxu gi locrino zo'u ko gasnu broda bu

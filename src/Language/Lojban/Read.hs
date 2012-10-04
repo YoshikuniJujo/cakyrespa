@@ -52,6 +52,7 @@ data Sumti
 	| TUhA Sumti
 	| GOI Sumti Sumti
 	| LerfuString String
+	| STense String Sumti Sumti
 	| NotImplementedSumti String
 	deriving (Show, Eq)
 
@@ -205,6 +206,9 @@ readSumti (P.LAhE_NAhE (_, "tu'a", _) _ _ _ s _ _) = TUhA $ readSumti s
 readSumti (P.OuterQuantifier _ s (Just (P.GOI (_, "goi", _) _ t _ _))) =
 	GOI (readSumti s) (readSumti t)
 readSumti (P.LerfuString ls _ _) = LerfuString $ concatMap (\(_, s, _) -> s) ls
+readSumti (GekSumti
+	(STagGik (P.Time _ [((_, pu, _), _, _)] _ _) ((_, "gi", _), _, _))
+	s ((_, "gi", _), _, _) t) = STense pu (readSumti s) (readSumti t)
 readSumti s = NotImplementedSumti $ "readSumti: " ++ show s
 
 processZOI :: String -> String

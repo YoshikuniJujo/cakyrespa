@@ -36,7 +36,9 @@ pcmd :: Lojban -> [Argument] -> Command
 pcmd p = case p of
 	Vocative "co'o" -> const COhO
 	TenseGI "ba" b c -> \args -> Commands (pcmd b args) (pcmd c args)
-	Prenex ss b -> const $ pcmd b $ map sumtiToArgument ss
+	Prenex ss b -> const $ CommandList $ do
+		rss <- mapM sumtiToArgument ss
+		return $ pcmd b rss
 	b@(Bridi (Brivla "gasnu") s) ->
 		\args -> fromMaybe (Unknown b) $ readGasnu s args
 	b@(Bridi (Brivla "morji") s) -> const $ fromMaybe (Unknown b) $ readMorji s
@@ -168,9 +170,9 @@ readPilno s = do
 					return $ const $ PEBYSKA r g b
 				CEhU i -> return $ \args ->
 					fromMaybe (ErrorC "bad args") $ do
-						skari <- getALO args i :: Maybe String
-						(r, g, b) <- lookup skari skaste
-						return $ PEBYSKA r g b :: Maybe Command
+						skari <- getALO args i
+						pebska <- mapM colorNameToPEBYSKA skari
+						return $ CommandList pebska
 		LO (Brivla "burcu") (Just (POI (Bridi (Brivla skari) []))) -> do
 			(r, g, b) <- lookup skari skaste
 			return $ const $ BURSKA r g b
@@ -180,6 +182,12 @@ readPilno s = do
 			return $ const $ BURSKA r g b
 		LO (Brivla "penbi") Nothing -> return $ const PILNOLOPENBI
 		_ -> return $ const $ UnknownSelpli selpli
+
+
+colorNameToPEBYSKA :: String -> Maybe Command
+colorNameToPEBYSKA skari = do
+	(r, g, b) <- lookup skari skaste
+	return $ PEBYSKA r g b
 
 skaste :: [(String, (Int, Int, Int))]
 skaste = [
@@ -241,10 +249,11 @@ readRixykla s = do
 readCarna :: [(Tag, Sumti)] -> Maybe ([Argument] -> Command)
 readCarna s = do
 	KOhA "ko" <- lookup (FA 1) s
-	let	LO (Brivla lr) _ =
+	LO (Brivla lr) _ <- return $
+--	let	LO (Brivla lr) _ =
 			fromMaybe (LO (Brivla "zunle") Nothing) $ lookup (FA 3) s
 --		d = maybe 90 (\(Left d) -> d) $ readLAhU2 s
-		d = fromMaybe (Left 90) $ readLAhU2 s
+	let	d = fromMaybe (Left 90) $ readLAhU2 s
 	case lr of
 		"zunle" -> return $ flip (either $ const . ZUNLE) d $ \i args ->
 			maybe (ErrorC "bad args") ZUNLE $ getDouble args i
@@ -258,21 +267,26 @@ getDouble args i = do
 	ADouble d <- return $ args !! (i - 1)
 	return d
 
-getALO :: [Argument] -> Int -> Maybe String
+getALO :: [Argument] -> Int -> Maybe [String]
 getALO args i = do
 	when (length args < i) $ fail "bad"
 	ALO s <- return $ args !! (i - 1)
-	return s
+	return [s]
 
 data Argument
 	= ADouble Double
 	| AInt Int
 	| ACommand Command
 	| ALO String
+	| ACons Argument Argument
 --	deriving Show
 
-sumtiToArgument (LI (Number n)) = ADouble n
-sumtiToArgument (LO (Brivla s) _) = ALO s
+sumtiToArgument (LI (Number n)) = [ADouble n]
+sumtiToArgument (LO (Brivla s) _) = [ALO s]
+sumtiToArgument (STense "ba" s_ t_) =
+	sumtiToArgument s_ ++
+	sumtiToArgument t_
+sumtiToArgument s = error $ "sumtiToArgument :" ++ show s
 
 data Command
 	= KLAMA Double Double
@@ -285,6 +299,7 @@ data Command
 	| COhACLUGAU
 	| COhUCLUGAU
 	| Commands Command Command
+	| CommandList [Command]
 	| Repeat Int Command
 	| XRUTI
 	| CISNI Double
@@ -331,6 +346,8 @@ processInput _ t NAVISKA = hideturtle t >> return True
 processInput _ t VISKA = showturtle t >> return True
 processInput _ _ COhO = return False
 processInput f t (Commands c d) = processInput f t c >> processInput f t d
+processInput f t (CommandList cl) =
+	mapM_ (processInput f t) cl >> return True
 processInput f t (Repeat n c) = sequence_ (replicate n (processInput f t c)) >>
 	return True
 processInput f t (MORJI cmene fasnu) = morji cmene fasnu >> return True
