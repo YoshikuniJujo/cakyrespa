@@ -152,7 +152,7 @@ readClugau s = do
 pilno :: ReadCommand
 pilno terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
-	binxo <- selpli args =<< lookup (FA 2) terms
+	binxo <- selpli args . linkargsToPOI =<< lookup (FA 2) terms
 	return $ if (Time ["ba"], KU) `elem` terms
 		then binxo
 		else Commands binxo PILNOLOPENBI
@@ -160,17 +160,22 @@ pilno terms args = do
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (x, y, z) = f x y z
 
+linkargsToPOI :: Sumti -> Sumti
+linkargsToPOI (LO (Linkargs selbri (SFIhO modal sumti)) Nothing) =
+	LO selbri $ Just $ POI $ Bridi modal [(FA 1, sumti)]
+linkargsToPOI (LO (Linkargs selbri sumti) Nothing) =
+	LO selbri $ Just $ POI $ Bridi selbri [(FA 2, sumti)]
+linkargsToPOI s = s
+
 selpli :: [Argument] -> Sumti -> Maybe Command
 selpli _ (LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
 	(FA 1, LI (Number size))])))) = return $ PEBYCISNI size
-selpli _ (LO (Linkargs (Brivla "penbi") (SFIhO (Brivla "cisni") (LI
-	(Number size)))) _) = return $ PEBYCISNI size
-selpli _ (LO (Brivla "penbi") (Just (POI (Bridi (Brivla skari) [])))) =
-	uncurry3 PEBYSKA <$> lookup skari skaste
 selpli args (LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
 	(FA 1, CEhU i)])))) = return $ applyDouble PEBYCISNI args i
-selpli _ (LO (Linkargs (Brivla "penbi") (LO (Brivla skari) _)) _) =
+selpli _ (LO (Brivla "penbi") (Just (POI (Bridi (Brivla skari) [])))) =
 	uncurry3 PEBYSKA <$> lookup skari skaste
+selpli _ (LO (Brivla "penbi") (Just (POI (Bridi (Brivla "penbi") [
+	(FA 2, LO (Brivla skari) Nothing)])))) = uncurry3 PEBYSKA <$> lookup skari skaste
 selpli args (LO (Brivla "penbi") (Just (POI (Bridi (ME me) [])))) = case me of
 	LO (Brivla skari) _ -> uncurry3 PEBYSKA <$> lookup skari skaste
 	CEhU i -> return $ applyLO
@@ -180,9 +185,10 @@ selpli args (LO (Brivla "penbi") (Just (POI (Bridi (ME me) [])))) = case me of
 selpli _ (LO (Brivla "penbi") Nothing) = return KUNTI
 
 selpli _ (LO (Brivla "burcu") (Just (POI (Bridi (Brivla skari) [])))) =
-	uncurry3 PEBYSKA <$> lookup skari skaste
-selpli _ (LO (Linkargs (Brivla "burcu") (SFIhO (Brivla "skari") (LO
-	(Brivla skari) _))) _) = uncurry3 PEBYSKA <$> lookup skari skaste
+	uncurry3 BURSKA <$> lookup skari skaste
+selpli _ (LO (Brivla "burcu") (Just (POI (Bridi (SE 2 (Brivla "skari")) [
+	(FA 1, LO (Brivla skari) Nothing)])))) =
+	uncurry3 BURSKA <$> lookup skari skaste
 
 selpli _ p = return $ UnknownSelpli p
 
