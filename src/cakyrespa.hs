@@ -173,21 +173,22 @@ selpli args (LO (Brivla "burcu") (Just (POI bridi))) = burcu args bridi
 selpli _ (LO (Brivla "penbi") Nothing) = return KUNTI
 selpli _ p = return $ UnknownSelpli p
 
+pebyska :: String -> Maybe Command
+pebyska skari = uncurry3 PEBYSKA <$> lookup skari skaste
+
 penbi :: [Argument] -> Lojban -> Maybe Command
+penbi _ (Bridi (Brivla s) []) = pebyska s
+penbi _ (Bridi (Brivla "penbi") [(FA 2, LO (Brivla s) Nothing)]) = pebyska s
+penbi args (Bridi (Brivla "penbi") [(FA 2, CEhU i)]) = return $ applyLO
+	(fromMaybe (ErrorC "selpli: no such skari") . pebyska) args i
+penbi _ (Bridi (ME (LO (Brivla skari) _)) []) = pebyska skari
+penbi args (Bridi (ME (CEhU i)) []) = return $ applyLO
+	(fromMaybe (ErrorC "selpli: no such skari") . pebyska) args i
 penbi _ (Bridi (Brivla "cisni") [(FA 1, LI (Number size))]) =
 	return $ PEBYCISNI size
 penbi args (Bridi (Brivla "cisni") [(FA 1, CEhU i)]) =
 	return $ applyDouble PEBYCISNI args i
-penbi _ (Bridi (Brivla skari) []) = uncurry3 PEBYSKA <$> lookup skari skaste
-penbi _ (Bridi (Brivla "penbi") [(FA 2, LO (Brivla skari) Nothing)]) =
-	uncurry3 PEBYSKA <$> lookup skari skaste
-penbi args (Bridi (ME me) []) = case me of
-	LO (Brivla skari) _ -> uncurry3 PEBYSKA <$> lookup skari skaste
-	CEhU i -> return $ applyLO
-		(maybe (ErrorC "selpli: no such skari")
-			(uncurry3 PEBYSKA) . flip lookup skaste) args i
-	_ -> return $ ErrorC $ "bad penbi: " ++ show me
-penbi _ _ = return $ ErrorC "penbi: no such penbi"
+penbi _ p = return $ ErrorC $ "penbi: no such penbi" ++ show p
 
 burcu :: [Argument] -> Lojban -> Maybe Command
 burcu _ (Bridi (Brivla skari) []) = uncurry3 BURSKA <$> lookup skari skaste

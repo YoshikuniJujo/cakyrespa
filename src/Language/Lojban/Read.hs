@@ -91,6 +91,8 @@ processCEhU _ [] = []
 processCEhU n ((t, CEhUPre) : rest) = (t, CEhU n) : processCEhU (n + 1) rest
 processCEhU n ((t, LO s (Just (POI (Bridi (ME CEhUPre) ss)))) : rest) =
 	(t, LO s $ Just $ POI $ Bridi (ME $ CEhU n) ss) : processCEhU (n + 1) rest
+processCEhU n ((t, LO (Linkargs selbri CEhUPre) Nothing) : rest) =
+	(t, LO (Linkargs selbri $ CEhU n) Nothing) : processCEhU (n + 1) rest
 processCEhU n (s : rest) = s : processCEhU n rest
 
 countc :: Text -> Int
@@ -100,6 +102,8 @@ countCEhU :: Int -> [(Tag, Sumti)] -> Int
 countCEhU n [] = n
 countCEhU n ((_, CEhUPre) : rest) = countCEhU (n + 1) rest
 countCEhU n ((_, LO _ (Just (POI (Bridi (ME CEhUPre) _)))) : rest) =
+	countCEhU (n + 1) rest
+countCEhU n ((_, LO (Linkargs _ CEhUPre) Nothing) : rest) =
 	countCEhU (n + 1) rest
 countCEhU n (_ : rest) = countCEhU n rest
 
