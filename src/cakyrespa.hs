@@ -168,29 +168,32 @@ linkargsToPOI (LO (Linkargs selbri sumti) Nothing) =
 linkargsToPOI s = s
 
 selpli :: [Argument] -> Sumti -> Maybe Command
-selpli _ (LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
-	(FA 1, LI (Number size))])))) = return $ PEBYCISNI size
-selpli args (LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
-	(FA 1, CEhU i)])))) = return $ applyDouble PEBYCISNI args i
-selpli _ (LO (Brivla "penbi") (Just (POI (Bridi (Brivla skari) [])))) =
+selpli args (LO (Brivla "penbi") (Just (POI bridi))) = penbi args bridi
+selpli args (LO (Brivla "burcu") (Just (POI bridi))) = burcu args bridi
+selpli _ (LO (Brivla "penbi") Nothing) = return KUNTI
+selpli _ p = return $ UnknownSelpli p
+
+penbi :: [Argument] -> Lojban -> Maybe Command
+penbi _ (Bridi (Brivla "cisni") [(FA 1, LI (Number size))]) =
+	return $ PEBYCISNI size
+penbi args (Bridi (Brivla "cisni") [(FA 1, CEhU i)]) =
+	return $ applyDouble PEBYCISNI args i
+penbi _ (Bridi (Brivla skari) []) = uncurry3 PEBYSKA <$> lookup skari skaste
+penbi _ (Bridi (Brivla "penbi") [(FA 2, LO (Brivla skari) Nothing)]) =
 	uncurry3 PEBYSKA <$> lookup skari skaste
-selpli _ (LO (Brivla "penbi") (Just (POI (Bridi (Brivla "penbi") [
-	(FA 2, LO (Brivla skari) Nothing)])))) = uncurry3 PEBYSKA <$> lookup skari skaste
-selpli args (LO (Brivla "penbi") (Just (POI (Bridi (ME me) [])))) = case me of
+penbi args (Bridi (ME me) []) = case me of
 	LO (Brivla skari) _ -> uncurry3 PEBYSKA <$> lookup skari skaste
 	CEhU i -> return $ applyLO
 		(maybe (ErrorC "selpli: no such skari")
 			(uncurry3 PEBYSKA) . flip lookup skaste) args i
 	_ -> return $ ErrorC $ "bad penbi: " ++ show me
-selpli _ (LO (Brivla "penbi") Nothing) = return KUNTI
+penbi _ _ = return $ ErrorC "penbi: no such penbi"
 
-selpli _ (LO (Brivla "burcu") (Just (POI (Bridi (Brivla skari) [])))) =
+burcu :: [Argument] -> Lojban -> Maybe Command
+burcu _ (Bridi (Brivla skari) []) = uncurry3 BURSKA <$> lookup skari skaste
+burcu _ (Bridi (SE 2 (Brivla "skari")) [(FA 1, LO (Brivla skari) Nothing)]) =
 	uncurry3 BURSKA <$> lookup skari skaste
-selpli _ (LO (Brivla "burcu") (Just (POI (Bridi (SE 2 (Brivla "skari")) [
-	(FA 1, LO (Brivla skari) Nothing)])))) =
-	uncurry3 BURSKA <$> lookup skari skaste
-
-selpli _ p = return $ UnknownSelpli p
+burcu _ _ = return $ ErrorC "burcu: no such burcu"
 
 skaste :: [(String, (Int, Int, Int))]
 skaste = [
