@@ -53,8 +53,8 @@ command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla o
 	"cisni" -> readCisni s
 	"xruti" -> readXruti s
 	"rapli" -> readRapli s
-	"carna" -> ($ args) <$> readCarna s
-	"crakla" -> readCrakla s args
+	"carna" -> carna s args
+	"crakla" -> crakla s args
 	"rixykla" -> readRixykla s
 	"pilno" -> ($ args) <$> readBAPilno s
 	"clugau" -> readClugau s
@@ -233,19 +233,21 @@ skaste = [
 	("xunblabi", (255, 192, 203))	-- Pink
  ]
 
-readLAhU2 :: [(Tag, Sumti)] -> Maybe (Either Double Int)
-readLAhU2 s = do
-	lahu <- lookup (BAI Nothing "la'u") s
-	case lahu of
+lahu :: [(Tag, Sumti)] -> Maybe (Either Double Int)
+lahu s = do
+	l <- lookup (BAI Nothing "la'u") s
+	case l of
 		LI (Number d) -> return $ Left d
 		CEhU i -> return $ Right i
 		_ -> fail "bad"
 
-readCrakla :: [(Tag, Sumti)] -> [Argument] -> Maybe Command
-readCrakla s args = do
-	KOhA "ko" <- lookup (FA 1) s
+type ReadCommand = [(Tag, Sumti)] -> [Argument] -> Maybe Command
+
+crakla :: ReadCommand
+crakla terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
 	return $ maybe (CRAKLA 100)
-		(either CRAKLA $ applyDouble CRAKLA args) $ readLAhU2 s
+		(either CRAKLA $ applyDouble CRAKLA args) $ lahu terms
 
 applyDouble :: (Double -> Command) -> [Argument] -> Int -> Command
 applyDouble cmd args i
@@ -255,21 +257,19 @@ applyDouble cmd args i
 readRixykla :: [(Tag, Sumti)] -> Maybe Command
 readRixykla s = do
 	KOhA "ko" <- lookup (FA 1) s
-	return $ RIXYKLA $ maybe 100 (\(Left d) -> d) $ readLAhU2 s
+	return $ RIXYKLA $ maybe 100 (\(Left d) -> d) $ lahu s
 
-readCarna :: [(Tag, Sumti)] -> Maybe ([Argument] -> Command)
-readCarna s = do
-	KOhA "ko" <- lookup (FA 1) s
-	LO (Brivla lr) _ <- return $
---	let	LO (Brivla lr) _ =
-			fromMaybe (LO (Brivla "zunle") Nothing) $ lookup (FA 3) s
---		d = maybe 90 (\(Left d) -> d) $ readLAhU2 s
-	let	d = fromMaybe (Left 90) $ readLAhU2 s
-	case lr of
-		"zunle" -> return $ flip (either $ const . ZUNLE) d $ \i args ->
-			maybe (ErrorC "bad args") ZUNLE $ getDouble args i
-		"pritu" -> return $ flip (either $ const . PRITU) d $ \i args ->
-			maybe (ErrorC "bad args") PRITU $ getDouble args i
+carna :: ReadCommand
+carna terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	farna <- case lookup (FA 3) terms of
+		Just (LO (Brivla zp) _) -> Just zp
+		Nothing -> Just "zunle"
+		_ -> Nothing
+	let	jganu = fromMaybe (Left 90) $ lahu terms
+	case farna of
+		"zunle" -> return $ either ZUNLE (applyDouble ZUNLE args) jganu
+		"pritu" -> return $ either PRITU (applyDouble PRITU args) jganu
 		_ -> fail "bad"
 
 getDouble :: [Argument] -> Int -> Maybe Double
