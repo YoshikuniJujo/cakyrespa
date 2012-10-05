@@ -1,3 +1,5 @@
+{-# LANGUAGE PatternGuards #-}
+
 module Main where
 
 import Text.XML.YJSVG(showSVG)
@@ -52,7 +54,7 @@ command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla o
 	"xruti" -> readXruti s
 	"rapli" -> readRapli s
 	"carna" -> ($ args) <$> readCarna s
-	"crakla" -> ($ args) <$> readCrakla s
+	"crakla" -> readCrakla s args
 	"rixykla" -> readRixykla s
 	"pilno" -> ($ args) <$> readBAPilno s
 	"clugau" -> readClugau s
@@ -239,19 +241,16 @@ readLAhU2 s = do
 		CEhU i -> return $ Right i
 		_ -> fail "bad"
 
-readCrakla :: [(Tag, Sumti)] -> Maybe ([Argument] -> Command)
-readCrakla s = do
+readCrakla :: [(Tag, Sumti)] -> [Argument] -> Maybe Command
+readCrakla s args = do
 	KOhA "ko" <- lookup (FA 1) s
-	return $ case readLAhU2 s of
-		Just (Left d) -> const $ CRAKLA d
-		Just (Right i) -> \args -> if length args < i
-			then ErrorC $ "too few args " ++ show i ++ " for " ++
-				show (length args)
-			else case args !! (i - 1) of
-				ADouble d -> CRAKLA d
-				_ -> ErrorC "bad argument"
-		_ -> const $ CRAKLA 100
---	return $ const $ CRAKLA $ maybe 100 (\(Left d) -> d) $ readLAhU2 s
+	return $ maybe (CRAKLA 100)
+		(either CRAKLA $ applyDouble CRAKLA args) $ readLAhU2 s
+
+applyDouble :: (Double -> Command) -> [Argument] -> Int -> Command
+applyDouble cmd args i
+	| length args >= i, ADouble d <- args !! (i - 1) = cmd d
+	| otherwise = ErrorC "applyDouble: bad arguments"
 
 readRixykla :: [(Tag, Sumti)] -> Maybe Command
 readRixykla s = do
