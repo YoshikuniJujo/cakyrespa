@@ -177,3 +177,7 @@ bagi loxunre gibagi lopelxu gi locrino zo'u ko bagi pilno lo penbi poi me ce'u
 さて、そろそろ refactoring の時間だ。
 まずは cakyrespa をあるてい度までやって、それから gluturtle に移ろう。
 また、lojbanParser で UI をもうすこし構造的にしようかな。
+
+2012.10.05 Fri.
+
+command を [(String, Function)] から探すようにしようかな。

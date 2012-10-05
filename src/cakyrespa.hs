@@ -40,25 +40,28 @@ command :: Lojban -> [Argument] -> Command
 command (Vocative "co'o") _ = COhO
 command (TenseGI "ba" b c) args = Commands (command b args) (command c args)
 command (Prenex ss b) _ = CommandList $ command b <$> mapM sumtiToArgument ss
-command p args = case p of
-	b@(Bridi (Brivla "gasnu") s) -> fromMaybe (Unknown b) $ readGasnu s args
-	b@(Bridi (Brivla "morji") s) -> fromMaybe (Unknown b) $ readMorji s
-	b@(Bridi (Brivla "klama") s) -> fromMaybe (Unknown b) $ readKlama s
-	b@(Bridi (Brivla "galfi") s) -> fromMaybe (Unknown b) $ readGalfi s
-	b@(Bridi (Brivla "tcidu") s) -> fromMaybe (Unknown b) $ readTcidu s
-	b@(Bridi (Brivla "rejgau") s) -> fromMaybe (Unknown b) $ readRejgau s
-	b@(Bridi (Brivla "viska") s) -> fromMaybe (Unknown b) $ readViska s
-	b@(Bridi (NA (Brivla "viska")) s) -> fromMaybe (Unknown b) $ readNAViska s
-	b@(Bridi (Brivla "cisni") s) -> fromMaybe (Unknown b) $ readCisni s
-	b@(Bridi (Brivla "xruti") s) -> fromMaybe (Unknown b) $ readXruti s
-	b@(Bridi (Brivla "rapli") s) -> fromMaybe (Unknown b) $ readRapli s
-	b@(Bridi (Brivla "carna") s) -> maybe (Unknown b) ($ args) $ readCarna s
-	b@(Bridi (Brivla "crakla") s) -> maybe (Unknown b) ($ args) $ readCrakla s
-	b@(Bridi (Brivla "rixykla") s) -> fromMaybe (Unknown b) $ readRixykla s
-	b@(Bridi (Brivla "pilno") s) -> maybe (Unknown b) ($ args) $ readBAPilno s
-	b@(Bridi (NA (Brivla "pilno")) s) -> fromMaybe (Unknown b) $ readNAPilno s
-	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
-	r -> Unknown r
+command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla of
+	"gasnu" -> readGasnu s args
+	"morji" -> readMorji s
+	"klama" -> readKlama s
+	"galfi" -> readGalfi s
+	"tcidu" -> readTcidu s
+	"rejgau" -> readRejgau s
+	"viska" -> readViska s
+	"cisni" -> readCisni s
+	"xruti" -> readXruti s
+	"rapli" -> readRapli s
+	"carna" -> ($ args) <$> readCarna s
+	"crakla" -> ($ args) <$> readCrakla s
+	"rixykla" -> readRixykla s
+	"pilno" -> ($ args) <$> readBAPilno s
+	"clugau" -> readClugau s
+	_ -> Nothing
+command b@(Bridi (NA (Brivla brivla)) s) _args = fromMaybe (Unknown b) $ case brivla of
+	"viska" -> readNAViska s
+	"pilno" -> readNAPilno s
+	_ -> Nothing
+command l _ = Unknown l
 
 updateReaders :: (Lojban -> Maybe Command) -> Lojban -> Maybe ([Argument] -> Command)
 updateReaders reader text = do
