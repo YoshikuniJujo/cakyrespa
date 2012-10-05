@@ -178,22 +178,19 @@ pebyska skari = uncurry3 PEBYSKA <$> lookup skari skaste
 
 penbi :: [Argument] -> Lojban -> Maybe Command
 penbi _ (Bridi (Brivla s) []) = pebyska s
-penbi _ (Bridi (Brivla "penbi") [(FA 2, LO (Brivla s) Nothing)]) = pebyska s
-penbi args (Bridi (Brivla "penbi") [(FA 2, CEhU i)]) = return $ applyLO
-	(fromMaybe (ErrorC "selpli: no such skari") . pebyska) args i
-penbi _ (Bridi (ME (LO (Brivla skari) _)) []) = pebyska skari
-penbi args (Bridi (ME (CEhU i)) []) = return $ applyLO
-	(fromMaybe (ErrorC "selpli: no such skari") . pebyska) args i
-penbi _ (Bridi (Brivla "cisni") [(FA 1, LI (Number size))]) =
-	return $ PEBYCISNI size
-penbi args (Bridi (Brivla "cisni") [(FA 1, CEhU i)]) =
-	return $ applyDouble PEBYCISNI args i
+penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = applyLO args s pebyska
+penbi args (Bridi (ME s) []) = applyLO args s pebyska
+penbi args (Bridi (Brivla "cisni") [(FA 1, s)]) =
+	applyDouble2 args s $ return . PEBYCISNI
 penbi _ p = return $ ErrorC $ "penbi: no such penbi" ++ show p
 
+burska :: String -> Maybe Command
+burska skari = uncurry3 BURSKA <$> lookup skari skaste
+
 burcu :: [Argument] -> Lojban -> Maybe Command
-burcu _ (Bridi (Brivla skari) []) = uncurry3 BURSKA <$> lookup skari skaste
-burcu _ (Bridi (SE 2 (Brivla "skari")) [(FA 1, LO (Brivla skari) Nothing)]) =
-	uncurry3 BURSKA <$> lookup skari skaste
+burcu _ (Bridi (Brivla skari) []) = burska skari
+burcu a (Bridi (ME s) []) = applyLO a s burska
+burcu a (Bridi (SE 2 (Brivla "skari")) [(FA 1, s)]) = applyLO a s burska
 burcu _ _ = return $ ErrorC "burcu: no such burcu"
 
 skaste :: [(String, (Int, Int, Int))]
@@ -266,15 +263,22 @@ getDouble args i = do
 	LI (Number d) <- return $ args !! (i - 1)
 	return d
 
+applyDouble2 :: Monad m => [Sumti] -> Sumti -> (Double -> m a) -> m a
+applyDouble2 args (CEhU i) cmd
+	| length args >= i, LI (Number d) <- args !! (i - 1) = cmd d
+applyDouble2 _ (LI (Number d)) cmd = cmd d
+applyDouble2 _ s _ = fail $ "applyDouble2: bad sumti" ++ show s
+
 applyDouble :: (Double -> Command) -> [Argument] -> Int -> Command
 applyDouble cmd args i
 	| length args >= i, LI (Number d) <- args !! (i - 1) = cmd d
 	| otherwise = ErrorC "applyDouble: bad arguments"
 
-applyLO :: (String -> Command) -> [Argument] -> Int -> Command
-applyLO cmd args i
+applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
+applyLO args (CEhU i) cmd
 	| length args >= i, LO (Brivla s) Nothing <- args !! (i - 1) = cmd s
-	| otherwise = ErrorC "applyLO: bad arguments"
+applyLO _ (LO (Brivla s) Nothing) cmd = cmd s
+applyLO _ s _ = fail $ "applyLO: bad sumti" ++ show s
 
 getALO :: [Argument] -> Int -> Maybe [String]
 getALO args i = do
