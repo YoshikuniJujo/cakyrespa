@@ -33,38 +33,32 @@ main = do
 	shape t "turtle"
 	shapesize t 3 3
 	notundo t
-	oninputtext f (processInput f t . cmd)
+	oninputtext f $ run f t . flip command [] . readLojban
 	mainLoop
 
-cmd :: String -> Command
-cmd = flip pcmd [] . readLojban
-
-pcmd :: Lojban -> [Argument] -> Command
-pcmd p = case p of
-	Vocative "co'o" -> const COhO
-	TenseGI "ba" b c -> \args -> Commands (pcmd b args) (pcmd c args)
-	Prenex ss b -> const $ CommandList $ do
-		rss <- mapM sumtiToArgument ss
-		return $ pcmd b rss
-	b@(Bridi (Brivla "gasnu") s) -> fromMaybe (Unknown b) . readGasnu s
-	b@(Bridi (Brivla "morji") s) -> const $ fromMaybe (Unknown b) $ readMorji s
-	b@(Bridi (Brivla "klama") s) -> const $ fromMaybe (Unknown b) $ readKlama s
-	b@(Bridi (Brivla "galfi") s) -> const $ fromMaybe (Unknown b) $ readGalfi s
-	b@(Bridi (Brivla "tcidu") s) -> const $ fromMaybe (Unknown b) $ readTcidu s
-	b@(Bridi (Brivla "rejgau") s) -> const $ fromMaybe (Unknown b) $ readRejgau s
-	b@(Bridi (Brivla "viska") s) -> const $ fromMaybe (Unknown b) $ readViska s
-	b@(Bridi (NA (Brivla "viska")) s) -> const $ fromMaybe (Unknown b) $ readNAViska s
-	b@(Bridi (Brivla "cisni") s) -> const $ fromMaybe (Unknown b) $ readCisni s
-	b@(Bridi (Brivla "xruti") s) -> const $ fromMaybe (Unknown b) $ readXruti s
-	b@(Bridi (Brivla "rapli") s) -> const $ fromMaybe (Unknown b) $ readRapli s
-	b@(Bridi (Brivla "carna") s) -> fromMaybe (const $ Unknown b) $ readCarna s
-	b@(Bridi (Brivla "crakla") s) -> fromMaybe (const $ Unknown b) $ readCrakla s
-	b@(Bridi (Brivla "rixykla") s) -> const $ fromMaybe (Unknown b) $ readRixykla s
-	b@(Bridi (Brivla "pilno") s) ->
-		fromMaybe (const $ Unknown b) $ readBAPilno s
-	b@(Bridi (NA (Brivla "pilno")) s) -> const $ fromMaybe (Unknown b) $ readNAPilno s
-	b@(Bridi (Brivla "clugau") s) -> const $ fromMaybe (Unknown b) $ readClugau s
-	r -> const $ Unknown r
+command :: Lojban -> [Argument] -> Command
+command (Vocative "co'o") _ = COhO
+command (TenseGI "ba" b c) args = Commands (command b args) (command c args)
+command (Prenex ss b) _ = CommandList $ command b <$> mapM sumtiToArgument ss
+command p args = case p of
+	b@(Bridi (Brivla "gasnu") s) -> fromMaybe (Unknown b) $ readGasnu s args
+	b@(Bridi (Brivla "morji") s) -> fromMaybe (Unknown b) $ readMorji s
+	b@(Bridi (Brivla "klama") s) -> fromMaybe (Unknown b) $ readKlama s
+	b@(Bridi (Brivla "galfi") s) -> fromMaybe (Unknown b) $ readGalfi s
+	b@(Bridi (Brivla "tcidu") s) -> fromMaybe (Unknown b) $ readTcidu s
+	b@(Bridi (Brivla "rejgau") s) -> fromMaybe (Unknown b) $ readRejgau s
+	b@(Bridi (Brivla "viska") s) -> fromMaybe (Unknown b) $ readViska s
+	b@(Bridi (NA (Brivla "viska")) s) -> fromMaybe (Unknown b) $ readNAViska s
+	b@(Bridi (Brivla "cisni") s) -> fromMaybe (Unknown b) $ readCisni s
+	b@(Bridi (Brivla "xruti") s) -> fromMaybe (Unknown b) $ readXruti s
+	b@(Bridi (Brivla "rapli") s) -> fromMaybe (Unknown b) $ readRapli s
+	b@(Bridi (Brivla "carna") s) -> maybe (Unknown b) ($ args) $ readCarna s
+	b@(Bridi (Brivla "crakla") s) -> maybe (Unknown b) ($ args) $ readCrakla s
+	b@(Bridi (Brivla "rixykla") s) -> fromMaybe (Unknown b) $ readRixykla s
+	b@(Bridi (Brivla "pilno") s) -> maybe (Unknown b) ($ args) $ readBAPilno s
+	b@(Bridi (NA (Brivla "pilno")) s) -> fromMaybe (Unknown b) $ readNAPilno s
+	b@(Bridi (Brivla "clugau") s) -> fromMaybe (Unknown b) $ readClugau s
+	r -> Unknown r
 
 updateReaders :: (Lojban -> Maybe Command) -> Lojban -> Maybe ([Argument] -> Command)
 updateReaders reader text = do
@@ -82,7 +76,7 @@ readMorji, readKlama, readGalfi, readTcidu, readRejgau ::
 readMorji s = do
 	KOhA "ko" <- lookup (FA 1) s
 	GOI (LerfuString cmene) (LO (DUhU fasnu) _) <- lookup (FA 2) s
-	return $ MORJI cmene $ pcmd fasnu
+	return $ MORJI cmene $ command fasnu
 
 readKlama s = do
 	KOhA "ko" <- lookup (FA 1) s
@@ -140,7 +134,7 @@ readRapli :: [(Tag, Sumti)] -> Maybe Command
 readRapli s = do
 	LO (NU p) _ <- lookup (FA 1) s
 	LI (Number n) <- lookup (FA 2) s
-	return $ Repeat (round n) (pcmd p [])
+	return $ Repeat (round n) (command p [])
 
 readClugau :: [(Tag, Sumti)] -> Maybe Command
 readClugau s = do
@@ -342,54 +336,54 @@ tcidu cmene = lookup cmene <$> readIORef theTable
 
 data LR = L | R | BadLR deriving Show
 
-processInput :: Field -> Turtle -> Command -> IO Bool
-processInput _ t (KLAMA x y) = goto t x y >> return True
-processInput _ t (CRAKLA d) = forward t d >> return True
-processInput _ t (RIXYKLA d) = backward t d >> return True
-processInput _ t (ZUNLE d) = left t d >> return True
-processInput _ t (PRITU d) = right t d >> return True
-processInput _ t (PEBYCISNI s) = pensize t s >> return True
-processInput _ t (PEBYSKA r g b) = pencolor t (r, g, b) >> return True
-processInput _ t (BURSKA r g b) = fillcolor t (r, g, b) >> return True
-processInput _ t (FLOSKA r g b) = bgcolor t (r, g, b) >> return True
-processInput _ t COhACLUGAU = beginfill t >> return True
-processInput _ t COhUCLUGAU = endfill t >> return True
-processInput _ t XRUTI = undo t >> return True
-processInput _ t (CISNI s) = shapesize t s s >> return True
-processInput _ t NAPILNOLOPENBI = penup t >> return True
-processInput _ t PILNOLOPENBI = pendown t >> return True
-processInput _ t NAVISKA = hideturtle t >> return True
-processInput _ t VISKA = showturtle t >> return True
-processInput _ _ COhO = return False
-processInput f t (Commands c d) = processInput f t c >> processInput f t d
-processInput f t (CommandList cl) =
-	mapM_ (processInput f t) cl >> return True
-processInput f t (Repeat n c) = replicateM_ n (processInput f t c) >>
+run :: Field -> Turtle -> Command -> IO Bool
+run _ t (KLAMA x y) = goto t x y >> return True
+run _ t (CRAKLA d) = forward t d >> return True
+run _ t (RIXYKLA d) = backward t d >> return True
+run _ t (ZUNLE d) = left t d >> return True
+run _ t (PRITU d) = right t d >> return True
+run _ t (PEBYCISNI s) = pensize t s >> return True
+run _ t (PEBYSKA r g b) = pencolor t (r, g, b) >> return True
+run _ t (BURSKA r g b) = fillcolor t (r, g, b) >> return True
+run _ t (FLOSKA r g b) = bgcolor t (r, g, b) >> return True
+run _ t COhACLUGAU = beginfill t >> return True
+run _ t COhUCLUGAU = endfill t >> return True
+run _ t XRUTI = undo t >> return True
+run _ t (CISNI s) = shapesize t s s >> return True
+run _ t NAPILNOLOPENBI = penup t >> return True
+run _ t PILNOLOPENBI = pendown t >> return True
+run _ t NAVISKA = hideturtle t >> return True
+run _ t VISKA = showturtle t >> return True
+run _ _ COhO = return False
+run f t (Commands c d) = run f t c >> run f t d
+run f t (CommandList cl) =
+	mapM_ (run f t) cl >> return True
+run f t (Repeat n c) = replicateM_ n (run f t c) >>
 	return True
-processInput _ _ (MORJI cmene fasnu) = morji cmene fasnu >> return True
-processInput f t (GASNU cmene sumti) = do
+run _ _ (MORJI cmene fasnu) = morji cmene fasnu >> return True
+run f t (GASNU cmene sumti) = do
 	mfasnu <- tcidu cmene
-	flip (maybe $ processInput f t $ ErrorC $ "not defined: " ++ cmene) mfasnu $
-		\fasnu -> processInput f t $ fasnu sumti
-processInput _ t (SAVEASSVG fp) = do
+	flip (maybe $ run f t $ ErrorC $ "not defined: " ++ cmene) mfasnu $
+		\fasnu -> run f t $ fasnu sumti
+run _ t (SAVEASSVG fp) = do
 	w <- windowWidth t
 	h <- windowHeight t
 	svg <- getSVG t
 	writeFile fp $ showSVG w h svg
 	return True
-processInput _ t (SAVEASCAK fp) = inputs t >>= writeFile fp . show >> return True
-processInput _ t (READFILE fp) = readFile fp >>= runInputs t . read >> return True
-processInput f _ (Unknown u) = do
+run _ t (SAVEASCAK fp) = inputs t >>= writeFile fp . show >> return True
+run _ t (READFILE fp) = readFile fp >>= runInputs t . read >> return True
+run f _ (Unknown u) = do
 	outputString f ".i mi na jimpe"
 	putStr "Unknown " >> print u
 	return True
-processInput f _ (UnknownSelpli us) = do
+run f _ (UnknownSelpli us) = do
 	outputString f ".i mi na djuno lo bi'unai selpli"
 	putStr "Unknown " >> print us
 	return True
-processInput f _ ParseErrorC = do
+run f _ ParseErrorC = do
 	outputString f ".i di'u na drani fo lo gerna"
 	return True
-processInput _ _ (ErrorC str) = do
+run _ _ (ErrorC str) = do
 	putStrLn $ "error: " ++ str
 	return True
