@@ -56,7 +56,7 @@ command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla o
 	"carna" -> carna s args
 	"crakla" -> crakla s args
 	"rixykla" -> readRixykla s
-	"pilno" -> ($ args) <$> readBAPilno s
+	"pilno" -> pilno s args
 	"clugau" -> readClugau s
 	_ -> Nothing
 command b@(Bridi (NA (Brivla brivla)) s) _args = fromMaybe (Unknown b) $ case brivla of
@@ -149,59 +149,42 @@ readClugau s = do
 		(False, True) -> return COhUCLUGAU
 		_ -> fail "bad"
 
-readBAPilno :: [(Tag, Sumti)] -> Maybe ([Argument] -> Command)
-readBAPilno s = do
-	cm <- readPilno s
-	if (Time ["ba"], KU) `elem` s then return cm
-		else return $ \args -> Commands (cm args) PILNOLOPENBI
+pilno :: ReadCommand
+pilno terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	binxo <- selpli args =<< lookup (FA 2) terms
+	return $ if (Time ["ba"], KU) `elem` terms
+		then binxo
+		else Commands binxo PILNOLOPENBI
 
-readPilno :: [(Tag, Sumti)] -> Maybe ([Argument] -> Command)
-readPilno s = do
-	KOhA "ko" <- lookup (FA 1) s
-	selpli <- lookup (FA 2) s
-	case selpli of
-		LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
-			(FA 1, LI (Number size))]))) ->
-			return $ const $ PEBYCISNI size
-		LO (Linkargs (Brivla "penbi") (SFIhO (Brivla "cisni") (LI
-			(Number size)))) _ -> return $ const $ PEBYCISNI size
-		LO (Brivla "penbi") (Just (POI (Bridi (Brivla skari) []))) -> do
-			(r, g, b) <- lookup skari skaste
-			return $ const $ PEBYSKA r g b
-		LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
-			(FA 1, CEhU i)]))) -> return $ \args ->
-			fromMaybe (ErrorC "bad args") $ do
-				size <- getDouble args i
-				return $ PEBYCISNI size
-		LO (Linkargs (Brivla "penbi") (LO (Brivla skari) _)) _ -> do
-			(r, g, b) <- lookup skari skaste
-			return $ const $ PEBYSKA r g b
-		LO (Brivla "penbi") (Just (POI (Bridi (ME me) []))) ->
-			case me of
-				LO (Brivla skari) _ -> do
-					(r, g, b) <- lookup skari skaste
-					return $ const $ PEBYSKA r g b
-				CEhU i -> return $ \args ->
-					fromMaybe (ErrorC "bad args") $ do
-						skari <- getALO args i
-						pebska <- mapM colorNameToPEBYSKA skari
-						return $ CommandList pebska
-				_ -> return $ const $ ErrorC $ "bad penbi: " ++ show me
-		LO (Brivla "burcu") (Just (POI (Bridi (Brivla skari) []))) -> do
-			(r, g, b) <- lookup skari skaste
-			return $ const $ BURSKA r g b
-		LO (Linkargs (Brivla "burcu") (SFIhO (Brivla "skari") (LO
-			(Brivla skari) _))) _ -> do
-			(r, g, b) <- lookup skari skaste
-			return $ const $ BURSKA r g b
-		LO (Brivla "penbi") Nothing -> return $ const PILNOLOPENBI
-		_ -> return $ const $ UnknownSelpli selpli
+uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 f (x, y, z) = f x y z
 
+selpli :: [Argument] -> Sumti -> Maybe Command
+selpli _ (LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
+	(FA 1, LI (Number size))])))) = return $ PEBYCISNI size
+selpli _ (LO (Linkargs (Brivla "penbi") (SFIhO (Brivla "cisni") (LI
+	(Number size)))) _) = return $ PEBYCISNI size
+selpli _ (LO (Brivla "penbi") (Just (POI (Bridi (Brivla skari) [])))) =
+	uncurry3 PEBYSKA <$> lookup skari skaste
+selpli args (LO (Brivla "penbi") (Just (POI (Bridi (Brivla "cisni") [
+	(FA 1, CEhU i)])))) = return $ applyDouble PEBYCISNI args i
+selpli _ (LO (Linkargs (Brivla "penbi") (LO (Brivla skari) _)) _) =
+	uncurry3 PEBYSKA <$> lookup skari skaste
+selpli args (LO (Brivla "penbi") (Just (POI (Bridi (ME me) [])))) = case me of
+	LO (Brivla skari) _ -> uncurry3 PEBYSKA <$> lookup skari skaste
+	CEhU i -> return $ applyLO
+		(maybe (ErrorC "selpli: no such skari")
+			(uncurry3 PEBYSKA) . flip lookup skaste) args i
+	_ -> return $ ErrorC $ "bad penbi: " ++ show me
+selpli _ (LO (Brivla "penbi") Nothing) = return KUNTI
 
-colorNameToPEBYSKA :: String -> Maybe Command
-colorNameToPEBYSKA skari = do
-	(r, g, b) <- lookup skari skaste
-	return $ PEBYSKA r g b
+selpli _ (LO (Brivla "burcu") (Just (POI (Bridi (Brivla skari) [])))) =
+	uncurry3 PEBYSKA <$> lookup skari skaste
+selpli _ (LO (Linkargs (Brivla "burcu") (SFIhO (Brivla "skari") (LO
+	(Brivla skari) _))) _) = uncurry3 PEBYSKA <$> lookup skari skaste
+
+selpli _ p = return $ UnknownSelpli p
 
 skaste :: [(String, (Int, Int, Int))]
 skaste = [
@@ -249,11 +232,6 @@ crakla terms args = do
 	return $ maybe (CRAKLA 100)
 		(either CRAKLA $ applyDouble CRAKLA args) $ lahu terms
 
-applyDouble :: (Double -> Command) -> [Argument] -> Int -> Command
-applyDouble cmd args i
-	| length args >= i, ADouble d <- args !! (i - 1) = cmd d
-	| otherwise = ErrorC "applyDouble: bad arguments"
-
 readRixykla :: [(Tag, Sumti)] -> Maybe Command
 readRixykla s = do
 	KOhA "ko" <- lookup (FA 1) s
@@ -277,6 +255,16 @@ getDouble args i = do
 	when (length args < i) $ fail "bad"
 	ADouble d <- return $ args !! (i - 1)
 	return d
+
+applyDouble :: (Double -> Command) -> [Argument] -> Int -> Command
+applyDouble cmd args i
+	| length args >= i, ADouble d <- args !! (i - 1) = cmd d
+	| otherwise = ErrorC "applyDouble: bad arguments"
+
+applyLO :: (String -> Command) -> [Argument] -> Int -> Command
+applyLO cmd args i
+	| length args >= i, ALO s <- args !! (i - 1) = cmd s
+	| otherwise = ErrorC "applyLO: bad arguments"
 
 getALO :: [Argument] -> Int -> Maybe [String]
 getALO args i = do
@@ -324,6 +312,7 @@ data Command
 	| READFILE FilePath
 	| MORJI String ([Argument] -> Command)
 	| GASNU String [Argument]
+	| KUNTI
 	| COhO | Unknown Lojban | ParseErrorC | UnknownSelpli Sumti
 	| ErrorC String
 --	deriving Show
@@ -375,6 +364,7 @@ run _ t (SAVEASSVG fp) = do
 	return True
 run _ t (SAVEASCAK fp) = inputs t >>= writeFile fp . show >> return True
 run _ t (READFILE fp) = readFile fp >>= runInputs t . read >> return True
+run _ _ KUNTI = return True
 run f _ (Unknown u) = do
 	outputString f ".i mi na jimpe"
 	putStr "Unknown " >> print u
