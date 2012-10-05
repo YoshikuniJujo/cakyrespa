@@ -181,3 +181,6 @@ bagi loxunre gibagi lopelxu gi locrino zo'u ko bagi pilno lo penbi poi me ce'u
 2012.10.05 Fri.
 
 command を [(String, Function)] から探すようにしようかな。
+
+[Argument] ではなく [Sumti] を使うべきだったようだ。
+今からでも直せるので直す。

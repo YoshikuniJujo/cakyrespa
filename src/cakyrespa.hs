@@ -38,7 +38,7 @@ main = do
 	oninputtext f $ run f t . flip command [] . readLojban
 	mainLoop
 
-command :: Lojban -> [Argument] -> Command
+command :: Lojban -> [Sumti] -> Command
 command (Vocative "co'o") _ = COhO
 command (TenseGI "ba" b c) args = Commands (command b args) (command c args)
 command (Prenex ss b) _ = CommandList $ command b <$> mapM sumtiToArgument ss
@@ -263,40 +263,28 @@ carna terms args = do
 getDouble :: [Argument] -> Int -> Maybe Double
 getDouble args i = do
 	when (length args < i) $ fail "bad"
-	ADouble d <- return $ args !! (i - 1)
+	LI (Number d) <- return $ args !! (i - 1)
 	return d
 
 applyDouble :: (Double -> Command) -> [Argument] -> Int -> Command
 applyDouble cmd args i
-	| length args >= i, ADouble d <- args !! (i - 1) = cmd d
+	| length args >= i, LI (Number d) <- args !! (i - 1) = cmd d
 	| otherwise = ErrorC "applyDouble: bad arguments"
 
 applyLO :: (String -> Command) -> [Argument] -> Int -> Command
 applyLO cmd args i
-	| length args >= i, ALO s <- args !! (i - 1) = cmd s
+	| length args >= i, LO (Brivla s) Nothing <- args !! (i - 1) = cmd s
 	| otherwise = ErrorC "applyLO: bad arguments"
 
 getALO :: [Argument] -> Int -> Maybe [String]
 getALO args i = do
 	when (length args < i) $ fail "bad"
-	ALO s <- return $ args !! (i - 1)
+	LO (Brivla s) Nothing <- return $ args !! (i - 1)
 	return [s]
 
-data Argument
-	= ADouble Double
-	| AInt Int
-	| ACommand Command
-	| ALO String
-	| ACons Argument Argument
---	deriving Show
-
-sumtiToArgument :: Sumti -> [Argument]
-sumtiToArgument (LI (Number n)) = [ADouble n]
-sumtiToArgument (LO (Brivla s) _) = [ALO s]
-sumtiToArgument (STense "ba" s_ t_) =
-	sumtiToArgument s_ ++
-	sumtiToArgument t_
-sumtiToArgument s = error $ "sumtiToArgument :" ++ show s
+sumtiToArgument :: Sumti -> [Sumti]
+sumtiToArgument (STense "ba" s t) = sumtiToArgument s ++ sumtiToArgument t
+sumtiToArgument s = [s]
 
 data Command
 	= KLAMA Double Double
@@ -326,6 +314,8 @@ data Command
 	| COhO | Unknown Lojban | ParseErrorC | UnknownSelpli Sumti
 	| ErrorC String
 --	deriving Show
+
+type Argument = Sumti
 
 type Table = [(String, [Argument] -> Command)]
 theTable :: IORef Table
