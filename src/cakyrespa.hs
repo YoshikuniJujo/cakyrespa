@@ -43,7 +43,7 @@ command (Vocative "co'o") _ = COhO
 command (TenseGI "ba" b c) args = Commands (command b args) (command c args)
 command (Prenex ss b) _ = CommandList $ command b <$> mapM sumtiToArgument ss
 command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla of
-	"gasnu" -> readGasnu s args
+	"gasnu" -> gasnu s args
 	"morji" -> readMorji s
 	"klama" -> readKlama s
 	"galfi" -> readGalfi s
@@ -70,8 +70,8 @@ updateReaders reader text = do
 	c <- reader text
 	return $ const c
 
-readGasnu :: [(Tag, Sumti)] -> [Argument] -> Maybe Command
-readGasnu s a = do
+gasnu :: ReadCommand
+gasnu s a = do
 	KOhA "ko" <- lookup (FA 1) s
 	LerfuString cmene <- lookup (FA 2) s
 	return $ GASNU cmene a
@@ -191,6 +191,7 @@ burcu :: [Argument] -> Lojban -> Maybe Command
 burcu _ (Bridi (Brivla skari) []) = burska skari
 burcu a (Bridi (ME s) []) = applyLO a s burska
 burcu a (Bridi (SE 2 (Brivla "skari")) [(FA 1, s)]) = applyLO a s burska
+burcu a (Bridi (Brivla "skari") [(FA 2, s)]) = applyLO a s burska
 burcu _ _ = return $ ErrorC "burcu: no such burcu"
 
 skaste :: [(String, (Int, Int, Int))]
