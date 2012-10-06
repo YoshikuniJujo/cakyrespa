@@ -82,8 +82,11 @@ klama, galfi, tcidu, rejgau ::
 morji :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
 morji s args = do
 	KOhA "ko" <- lookup (FA 1) s
-	GOI (LerfuString cmene) (LO (DUhU fasnu) _) <- lookup (FA 2) s
-	return $ MORJI cmene $ command fasnu
+	GOI lerfu duhu <- lookup (FA 2) s
+	apply2 args lerfu duhu $ \l d -> case (l, d) of
+		(LerfuString cmene, LO (DUhU fasnu) _) ->
+			return $ MORJI cmene $ command fasnu
+		a -> return $ ErrorC $ show a
 
 klama s = do
 	KOhA "ko" <- lookup (FA 1) s
@@ -256,6 +259,10 @@ carna terms args = do
 		"zunle" -> return $ ZUNLE jganu
 		"pritu" -> return $ PRITU jganu
 		_ -> fail "bad"
+
+apply2 :: Monad m => [Sumti] -> Sumti -> Sumti -> (Sumti -> Sumti -> m a) -> m a
+apply2 args s1 s2 cmd = apply args s2 =<< apply args s1 (return . cmd)
+-- apply args s1 cmd :: 
 
 apply :: Monad m => [Sumti] -> Sumti -> (Sumti -> m a) -> m a
 apply args (CEhU i) cmd

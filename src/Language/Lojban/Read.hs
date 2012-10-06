@@ -96,6 +96,12 @@ processCEhU n ((t, LO (Linkargs selbri CEhUPre) Nothing) : rest) =
 processCEhU n ((t, LO (Linkargs selbri (SFIhO modal CEhUPre)) Nothing) : rest) =
 	(t, LO (Linkargs selbri $ SFIhO modal $ CEhU n) Nothing) :
 		processCEhU (n + 1) rest
+processCEhU n ((t, GOI CEhUPre CEhUPre) : rest) =
+	(t, GOI (CEhU n) (CEhU $ n + 1)) : processCEhU (n + 2) rest
+processCEhU n ((t, GOI CEhUPre s) : rest) =
+	(t, GOI (CEhU n) s) : processCEhU (n + 1) rest
+processCEhU n ((t, GOI s CEhUPre) : rest) =
+	(t, GOI s (CEhU n)) : processCEhU (n + 1) rest
 processCEhU n (s : rest) = s : processCEhU n rest
 
 countc :: Text -> Int
@@ -110,6 +116,9 @@ countCEhU n ((_, LO (Linkargs _ CEhUPre) Nothing) : rest) =
 	countCEhU (n + 1) rest
 countCEhU n ((_, LO (Linkargs _ (SFIhO _ CEhUPre)) Nothing) : rest) =
 	countCEhU (n + 1) rest
+countCEhU n ((_, GOI CEhUPre CEhUPre) : rest) = countCEhU (n + 2) rest
+countCEhU n ((_, GOI CEhUPre _) : rest) = countCEhU (n + 1) rest
+countCEhU n ((_, GOI _ CEhUPre) : rest) = countCEhU (n + 1) rest
 countCEhU n (_ : rest) = countCEhU n rest
 
 flipTag :: Int -> Tag -> Tag
