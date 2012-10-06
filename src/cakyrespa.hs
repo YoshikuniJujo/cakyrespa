@@ -44,7 +44,7 @@ command (TenseGI "ba" b c) args = Commands (command b args) (command c args)
 command (Prenex ss b) _ = CommandList $ command b <$> mapM sumtiToArgument ss
 command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla of
 	"gasnu" -> gasnu s args
-	"morji" -> morji s
+	"morji" -> morji s args
 	"klama" -> klama s
 	"galfi" -> galfi s
 	"tcidu" -> tcidu s
@@ -55,7 +55,7 @@ command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla o
 	"rapli" -> rapli s
 	"carna" -> carna s args
 	"crakla" -> crakla s args
-	"rixykla" -> rixykla s
+	"rixykla" -> rixykla s args
 	"pilno" -> pilno s args
 	"clugau" -> clugau s
 	_ -> Nothing
@@ -76,9 +76,11 @@ gasnu s a = do
 	LerfuString cmene <- lookup (FA 2) s
 	return $ GASNU cmene a
 
-morji, klama, galfi, tcidu, rejgau ::
+klama, galfi, tcidu, rejgau ::
 	[(Tag, Sumti)] -> Maybe Command
-morji s = do
+
+morji :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+morji s _ = do
 	KOhA "ko" <- lookup (FA 1) s
 	GOI (LerfuString cmene) (LO (DUhU fasnu) _) <- lookup (FA 2) s
 	return $ MORJI cmene $ command fasnu
@@ -181,7 +183,7 @@ penbi _ (Bridi (Brivla s) []) = pebyska s
 penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = applyLO args s pebyska
 penbi args (Bridi (ME s) []) = applyLO args s pebyska
 penbi args (Bridi (Brivla "cisni") [(FA 1, s)]) =
-	applyDouble2 args s $ return . PEBYCISNI
+	applyDouble args s $ return . PEBYCISNI
 penbi _ p = return $ ErrorC $ "penbi: no such penbi" ++ show p
 
 burska :: String -> Maybe Command
@@ -224,26 +226,23 @@ skaste = [
 	("xunblabi", (255, 192, 203))	-- Pink
  ]
 
-lahu :: [(Tag, Sumti)] -> Maybe (Either Double Int)
-lahu s = do
+lahu :: [Sumti] -> [(Tag, Sumti)] -> Maybe Double
+lahu args s = do
 	l <- lookup (BAI Nothing "la'u") s
-	case l of
-		LI (Number d) -> return $ Left d
-		CEhU i -> return $ Right i
-		_ -> fail "bad"
+	applyDouble args l return
 
 type ReadCommand = [(Tag, Sumti)] -> [Argument] -> Maybe Command
 
 crakla :: ReadCommand
 crakla terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
-	return $ maybe (CRAKLA 100)
-		(either CRAKLA $ applyDouble CRAKLA args) $ lahu terms
+	return $ maybe (CRAKLA 100)  CRAKLA $ lahu args terms
 
-rixykla :: [(Tag, Sumti)] -> Maybe Command
-rixykla s = do
+rixykla :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+rixykla s args = do
 	KOhA "ko" <- lookup (FA 1) s
-	return $ RIXYKLA $ maybe 100 (\(Left d) -> d) $ lahu s
+	return $ RIXYKLA $ fromMaybe 100 $ lahu args s
+--	return $ RIXYKLA $ maybe 100 (\(Left d) -> d) $ lahu s
 
 carna :: ReadCommand
 carna terms args = do
@@ -252,10 +251,10 @@ carna terms args = do
 		Just (LO (Brivla zp) _) -> Just zp
 		Nothing -> Just "zunle"
 		_ -> Nothing
-	let	jganu = fromMaybe (Left 90) $ lahu terms
+	let	jganu = fromMaybe 90 $ lahu args terms
 	case farna of
-		"zunle" -> return $ either ZUNLE (applyDouble ZUNLE args) jganu
-		"pritu" -> return $ either PRITU (applyDouble PRITU args) jganu
+		"zunle" -> return $ ZUNLE jganu
+		"pritu" -> return $ PRITU jganu
 		_ -> fail "bad"
 
 getDouble :: [Argument] -> Int -> Maybe Double
@@ -264,28 +263,17 @@ getDouble args i = do
 	LI (Number d) <- return $ args !! (i - 1)
 	return d
 
-applyDouble2 :: Monad m => [Sumti] -> Sumti -> (Double -> m a) -> m a
-applyDouble2 args (CEhU i) cmd
+applyDouble :: Monad m => [Sumti] -> Sumti -> (Double -> m a) -> m a
+applyDouble args (CEhU i) cmd
 	| length args >= i, LI (Number d) <- args !! (i - 1) = cmd d
-applyDouble2 _ (LI (Number d)) cmd = cmd d
-applyDouble2 _ s _ = fail $ "applyDouble2: bad sumti" ++ show s
-
-applyDouble :: (Double -> Command) -> [Argument] -> Int -> Command
-applyDouble cmd args i
-	| length args >= i, LI (Number d) <- args !! (i - 1) = cmd d
-	| otherwise = ErrorC "applyDouble: bad arguments"
+applyDouble _ (LI (Number d)) cmd = cmd d
+applyDouble _ s _ = fail $ "applyDouble: bad sumti" ++ show s
 
 applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
 applyLO args (CEhU i) cmd
 	| length args >= i, LO (Brivla s) Nothing <- args !! (i - 1) = cmd s
 applyLO _ (LO (Brivla s) Nothing) cmd = cmd s
 applyLO _ s _ = fail $ "applyLO: bad sumti" ++ show s
-
-getALO :: [Argument] -> Int -> Maybe [String]
-getALO args i = do
-	when (length args < i) $ fail "bad"
-	LO (Brivla s) Nothing <- return $ args !! (i - 1)
-	return [s]
 
 sumtiToArgument :: Sumti -> [Sumti]
 sumtiToArgument (STense "ba" s t) = sumtiToArgument s ++ sumtiToArgument t
