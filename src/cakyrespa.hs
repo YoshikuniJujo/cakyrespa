@@ -17,7 +17,7 @@ import Language.Lojban.Read(
 import System.Environment(getProgName, getArgs)
 import System.IO.Unsafe(unsafePerformIO)
 import Control.Applicative((<$>))
-import Control.Monad(when, replicateM_)
+import Control.Monad(replicateM_)
 import Data.Maybe(fromMaybe)
 import Data.IORef(IORef, newIORef, readIORef)
 import Data.IORef.Tools(atomicModifyIORef_)
@@ -80,7 +80,7 @@ klama, galfi, tcidu, rejgau ::
 	[(Tag, Sumti)] -> Maybe Command
 
 morji :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
-morji s _ = do
+morji s args = do
 	KOhA "ko" <- lookup (FA 1) s
 	GOI (LerfuString cmene) (LO (DUhU fasnu) _) <- lookup (FA 2) s
 	return $ MORJI cmene $ command fasnu
@@ -257,23 +257,21 @@ carna terms args = do
 		"pritu" -> return $ PRITU jganu
 		_ -> fail "bad"
 
-getDouble :: [Argument] -> Int -> Maybe Double
-getDouble args i = do
-	when (length args < i) $ fail "bad"
-	LI (Number d) <- return $ args !! (i - 1)
-	return d
+apply :: Monad m => [Sumti] -> Sumti -> (Sumti -> m a) -> m a
+apply args (CEhU i) cmd
+	| length args >= i = cmd $ args !! (i - 1)
+	| otherwise = fail $ "apply: too few args"
+apply _ s cmd = cmd s
 
 applyDouble :: Monad m => [Sumti] -> Sumti -> (Double -> m a) -> m a
-applyDouble args (CEhU i) cmd
-	| length args >= i, LI (Number d) <- args !! (i - 1) = cmd d
-applyDouble _ (LI (Number d)) cmd = cmd d
-applyDouble _ s _ = fail $ "applyDouble: bad sumti" ++ show s
+applyDouble args sumti cmd = apply args sumti $ \s -> case s of
+	LI (Number d) -> cmd d
+	_ -> fail $ "applyDouble: bad sumti " ++ show s
 
 applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
-applyLO args (CEhU i) cmd
-	| length args >= i, LO (Brivla s) Nothing <- args !! (i - 1) = cmd s
-applyLO _ (LO (Brivla s) Nothing) cmd = cmd s
-applyLO _ s _ = fail $ "applyLO: bad sumti" ++ show s
+applyLO args sumti cmd = apply args sumti $ \s -> case s of
+	LO (Brivla d) Nothing -> cmd d
+	_ -> fail $ "applyLO: bad sumti " ++ show s
 
 sumtiToArgument :: Sumti -> [Sumti]
 sumtiToArgument (STense "ba" s t) = sumtiToArgument s ++ sumtiToArgument t
