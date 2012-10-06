@@ -47,8 +47,8 @@ command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla o
 	"morji" -> morji s args
 	"klama" -> klama s args
 	"galfi" -> galfi s args
-	"tcidu" -> tcidu s
-	"rejgau" -> rejgau s
+	"tcidu" -> tcidu s args
+	"rejgau" -> rejgau s args
 	"viska" -> viska s
 	"cisni" -> cisni s
 	"xruti" -> xruti s
@@ -75,9 +75,6 @@ gasnu s a = do
 	KOhA "ko" <- lookup (FA 1) s
 	LerfuString cmene <- lookup (FA 2) s
 	return $ GASNU cmene a
-
-tcidu, rejgau ::
-	[(Tag, Sumti)] -> Maybe Command
 
 morji :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
 morji s args = do
@@ -107,18 +104,23 @@ galfi s args = do
 			return $ let (r, g, b) = clr in FLOSKA r g b
 		_ -> return $ ErrorC $ show s
 
-tcidu s = do
+tcidu :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+tcidu s args = do
 	KOhA "ko" <- lookup (FA 1) s
-	LA (Right (ME (ZOI fp))) <- lookup (FA 2) s
-	return $ READFILE fp
+	sumti <- lookup (FA 2) s
+	apply args sumti $ \smt -> case smt of
+		LA (Right (ME (ZOI fp))) -> return $ READFILE fp
+		LAhE (ZOI fp) -> return $ READFILE fp
+		_ -> return $ ErrorC $ show s
 
-rejgau s = do
+rejgau :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+rejgau s args = do
 	KOhA "ko" <- lookup (FA 1) s
-	ZOI fp <- lookup (BAI Nothing "me'e") s
+	zfp <- lookup (BAI Nothing "me'e") s
 	tai <- lookup (BAI (Just "se") "tai") s
-	case tai of
-		LA (Right (Brivla "cakyrespa")) -> return $ SAVEASCAK fp
-		LA (Left "syvygyd") -> return $ SAVEASSVG fp
+	apply2 args zfp tai $ \z t -> case (z, t) of
+		(ZOI fp, LA (Right (Brivla "cakyrespa"))) -> return $ SAVEASCAK fp
+		(ZOI fp, LA (Left "syvygyd")) -> return $ SAVEASSVG fp
 		_ -> error $ show tai
 
 viska :: [(Tag, Sumti)] -> Maybe Command

@@ -53,6 +53,7 @@ data Sumti
 	| GOI Sumti Sumti
 	| LerfuString String
 	| STense String Sumti Sumti
+	| LAhE Sumti
 	| NotImplementedSumti String
 	deriving (Show, Eq)
 
@@ -102,6 +103,8 @@ processCEhU n ((t, GOI CEhUPre s) : rest) =
 	(t, GOI (CEhU n) s) : processCEhU (n + 1) rest
 processCEhU n ((t, GOI s CEhUPre) : rest) =
 	(t, GOI s (CEhU n)) : processCEhU (n + 1) rest
+processCEhU n ((t, LA (Right (ME CEhUPre))) : rest) =
+	(t, LA $ Right $ ME $ CEhU n) : processCEhU (n + 1) rest
 processCEhU n (s : rest) = s : processCEhU n rest
 
 countc :: Text -> Int
@@ -119,6 +122,7 @@ countCEhU n ((_, LO (Linkargs _ (SFIhO _ CEhUPre)) Nothing) : rest) =
 countCEhU n ((_, GOI CEhUPre CEhUPre) : rest) = countCEhU (n + 2) rest
 countCEhU n ((_, GOI CEhUPre _) : rest) = countCEhU (n + 1) rest
 countCEhU n ((_, GOI _ CEhUPre) : rest) = countCEhU (n + 1) rest
+countCEhU n ((_, LA (Right (ME CEhUPre))) : rest) = countCEhU (n + 1) rest
 countCEhU n (_ : rest) = countCEhU n rest
 
 flipTag :: Int -> Tag -> Tag
@@ -231,6 +235,7 @@ readSumti (P.LerfuString ls _ _) = LerfuString $ concatMap (\(_, s, _) -> s) ls
 readSumti (GekSumti
 	(STagGik (P.Time _ [((_, pu, _), _, _)] _ _) ((_, "gi", _), _, _))
 	s ((_, "gi", _), _, _) t) = STense pu (readSumti s) (readSumti t)
+readSumti (P.LAhE_NAhE (_, "la'e", _) _ _ _ s _ _) = LAhE $ readSumti s
 readSumti s = NotImplementedSumti $ "readSumti: " ++ show s
 
 processZOI :: String -> String
