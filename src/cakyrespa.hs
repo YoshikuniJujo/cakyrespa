@@ -45,7 +45,7 @@ command (Prenex ss b) _ = CommandList $ command b <$> mapM sumtiToArgument ss
 command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla of
 	"gasnu" -> gasnu s args
 	"morji" -> morji s args
-	"klama" -> klama s
+	"klama" -> klama s args
 	"galfi" -> galfi s
 	"tcidu" -> tcidu s
 	"rejgau" -> rejgau s
@@ -76,7 +76,7 @@ gasnu s a = do
 	LerfuString cmene <- lookup (FA 2) s
 	return $ GASNU cmene a
 
-klama, galfi, tcidu, rejgau ::
+galfi, tcidu, rejgau ::
 	[(Tag, Sumti)] -> Maybe Command
 
 morji :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
@@ -88,10 +88,13 @@ morji s args = do
 			return $ MORJI cmene $ command fasnu
 		a -> return $ ErrorC $ show a
 
-klama s = do
+klama :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+klama s args = do
 	KOhA "ko" <- lookup (FA 1) s
-	LI (JOhI [Number x, Number y]) <- lookup (FA 2 ) s
-	return $ KLAMA x y
+	sumti <- lookup (FA 2 ) s
+	apply args sumti $ \smt -> case smt of
+		LI (JOhI [Number x, Number y]) -> return $ KLAMA x y
+		_ -> return $ ErrorC $ show s
 
 galfi s = do
 	TUhA (KOhA "ko") <- lookup (FA 1) s
