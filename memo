@@ -184,3 +184,10 @@ command を [(String, Function)] から探すようにしようかな。
 
 [Argument] ではなく [Sumti] を使うべきだったようだ。
 今からでも直せるので直す。
+
+2012.10.07 Sun.
+
+ErrorC を使うのならば Maybe Command にする必要はないような気がする。
+しかし、apply が Monad を要求している。
+むしろ Either Error Command を使って ErrorC を使わないというやりかたもある。
+いろいろ考えてみる必要がある。

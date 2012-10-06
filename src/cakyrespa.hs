@@ -46,7 +46,7 @@ command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla o
 	"gasnu" -> gasnu s args
 	"morji" -> morji s args
 	"klama" -> klama s args
-	"galfi" -> galfi s
+	"galfi" -> galfi s args
 	"tcidu" -> tcidu s
 	"rejgau" -> rejgau s
 	"viska" -> viska s
@@ -76,7 +76,7 @@ gasnu s a = do
 	LerfuString cmene <- lookup (FA 2) s
 	return $ GASNU cmene a
 
-galfi, tcidu, rejgau ::
+tcidu, rejgau ::
 	[(Tag, Sumti)] -> Maybe Command
 
 morji :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
@@ -96,12 +96,16 @@ klama s args = do
 		LI (JOhI [Number x, Number y]) -> return $ KLAMA x y
 		_ -> return $ ErrorC $ show s
 
-galfi s = do
+galfi :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+galfi s args = do
 	TUhA (KOhA "ko") <- lookup (FA 1) s
 	LO (Brivla "foldi") Nothing <- lookup (FA 2) s
-	LO (Brivla skari) Nothing <- lookup (FA 3) s
-	clr <- lookup skari skaste
-	return $ let (r, g, b) = clr in FLOSKA r g b
+	sumti <- lookup (FA 3) s
+	apply args sumti $ \smt -> case smt of
+		LO (Brivla skari) Nothing -> do
+			clr <- lookup skari skaste
+			return $ let (r, g, b) = clr in FLOSKA r g b
+		_ -> return $ ErrorC $ show s
 
 tcidu s = do
 	KOhA "ko" <- lookup (FA 1) s
