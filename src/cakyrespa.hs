@@ -44,24 +44,24 @@ command (TenseGI "ba" b c) args = Commands (command b args) (command c args)
 command (Prenex ss b) _ = CommandList $ command b <$> mapM sumtiToArgument ss
 command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla of
 	"gasnu" -> gasnu s args
-	"morji" -> readMorji s
-	"klama" -> readKlama s
-	"galfi" -> readGalfi s
-	"tcidu" -> readTcidu s
-	"rejgau" -> readRejgau s
-	"viska" -> readViska s
-	"cisni" -> readCisni s
-	"xruti" -> readXruti s
-	"rapli" -> readRapli s
+	"morji" -> morji s
+	"klama" -> klama s
+	"galfi" -> galfi s
+	"tcidu" -> tcidu s
+	"rejgau" -> rejgau s
+	"viska" -> viska s
+	"cisni" -> cisni s
+	"xruti" -> xruti s
+	"rapli" -> rapli s
 	"carna" -> carna s args
 	"crakla" -> crakla s args
-	"rixykla" -> readRixykla s
+	"rixykla" -> rixykla s
 	"pilno" -> pilno s args
-	"clugau" -> readClugau s
+	"clugau" -> clugau s
 	_ -> Nothing
 command b@(Bridi (NA (Brivla brivla)) s) _args = fromMaybe (Unknown b) $ case brivla of
-	"viska" -> readNAViska s
-	"pilno" -> readNAPilno s
+	"viska" -> naViska s
+	"pilno" -> naPilno s
 	_ -> Nothing
 command l _ = Unknown l
 
@@ -76,31 +76,31 @@ gasnu s a = do
 	LerfuString cmene <- lookup (FA 2) s
 	return $ GASNU cmene a
 
-readMorji, readKlama, readGalfi, readTcidu, readRejgau ::
+morji, klama, galfi, tcidu, rejgau ::
 	[(Tag, Sumti)] -> Maybe Command
-readMorji s = do
+morji s = do
 	KOhA "ko" <- lookup (FA 1) s
 	GOI (LerfuString cmene) (LO (DUhU fasnu) _) <- lookup (FA 2) s
 	return $ MORJI cmene $ command fasnu
 
-readKlama s = do
+klama s = do
 	KOhA "ko" <- lookup (FA 1) s
 	LI (JOhI [Number x, Number y]) <- lookup (FA 2 ) s
 	return $ KLAMA x y
 
-readGalfi s = do
+galfi s = do
 	TUhA (KOhA "ko") <- lookup (FA 1) s
 	LO (Brivla "foldi") Nothing <- lookup (FA 2) s
 	LO (Brivla skari) Nothing <- lookup (FA 3) s
 	clr <- lookup skari skaste
 	return $ let (r, g, b) = clr in FLOSKA r g b
 
-readTcidu s = do
+tcidu s = do
 	KOhA "ko" <- lookup (FA 1) s
 	LA (Right (ME (ZOI fp))) <- lookup (FA 2) s
 	return $ READFILE fp
 
-readRejgau s = do
+rejgau s = do
 	KOhA "ko" <- lookup (FA 1) s
 	ZOI fp <- lookup (BAI Nothing "me'e") s
 	tai <- lookup (BAI (Just "se") "tai") s
@@ -109,40 +109,40 @@ readRejgau s = do
 		LA (Left "syvygyd") -> return $ SAVEASSVG fp
 		_ -> error $ show tai
 
-readViska :: [(Tag, Sumti)] -> Maybe Command
-readViska s = do
+viska :: [(Tag, Sumti)] -> Maybe Command
+viska s = do
 	KOhA "ko" <- lookup (FA 2) s
 	return VISKA
 
-readNAViska :: [(Tag, Sumti)] -> Maybe Command
-readNAViska s = do
+naViska :: [(Tag, Sumti)] -> Maybe Command
+naViska s = do
 	KOhA "ko" <- lookup (FA 2) s
 	return NAVISKA
 
-readNAPilno :: [(Tag, Sumti)] -> Maybe Command
-readNAPilno s = do
+naPilno :: [(Tag, Sumti)] -> Maybe Command
+naPilno s = do
 	KOhA "ko" <- lookup (FA 1) s
 	return NAPILNOLOPENBI
 
-readCisni :: [(Tag, Sumti)] -> Maybe Command
-readCisni s = do
+cisni :: [(Tag, Sumti)] -> Maybe Command
+cisni s = do
 	LI (Number n) <- lookup (FA 1) s
 	KOhA "ko" <- lookup (FA 2) s
 	return $ CISNI n
 
-readXruti :: [(Tag, Sumti)] -> Maybe Command
-readXruti s = do
+xruti :: [(Tag, Sumti)] -> Maybe Command
+xruti s = do
 	KOhA "ko" <- lookup (FA 1) s
 	return XRUTI
 
-readRapli :: [(Tag, Sumti)] -> Maybe Command
-readRapli s = do
+rapli :: [(Tag, Sumti)] -> Maybe Command
+rapli s = do
 	LO (NU p) _ <- lookup (FA 1) s
 	LI (Number n) <- lookup (FA 2) s
 	return $ Repeat (round n) (command p [])
 
-readClugau :: [(Tag, Sumti)] -> Maybe Command
-readClugau s = do
+clugau :: [(Tag, Sumti)] -> Maybe Command
+clugau s = do
 	KOhA "ko" <- lookup (FA 1) s
 	case ((Time ["co'a"], KU) `elem` s, (Time ["co'u"], KU) `elem` s) of
 		(True, False) -> return COhACLUGAU
@@ -240,8 +240,8 @@ crakla terms args = do
 	return $ maybe (CRAKLA 100)
 		(either CRAKLA $ applyDouble CRAKLA args) $ lahu terms
 
-readRixykla :: [(Tag, Sumti)] -> Maybe Command
-readRixykla s = do
+rixykla :: [(Tag, Sumti)] -> Maybe Command
+rixykla s = do
 	KOhA "ko" <- lookup (FA 1) s
 	return $ RIXYKLA $ maybe 100 (\(Left d) -> d) $ lahu s
 
@@ -325,10 +325,10 @@ type Argument = Sumti
 type Table = [(String, [Argument] -> Command)]
 theTable :: IORef Table
 theTable = unsafePerformIO $ newIORef []
-morji :: String -> ([Argument] -> Command) -> IO ()
-morji cmene fasnu = atomicModifyIORef_ theTable ((cmene, fasnu) :)
-tcidu :: String -> IO (Maybe ([Argument] -> Command))
-tcidu cmene = lookup cmene <$> readIORef theTable
+writeTable :: String -> ([Argument] -> Command) -> IO ()
+writeTable cmene fasnu = atomicModifyIORef_ theTable ((cmene, fasnu) :)
+readTable :: String -> IO (Maybe ([Argument] -> Command))
+readTable cmene = lookup cmene <$> readIORef theTable
 
 data LR = L | R | BadLR deriving Show
 
@@ -356,9 +356,9 @@ run f t (CommandList cl) =
 	mapM_ (run f t) cl >> return True
 run f t (Repeat n c) = replicateM_ n (run f t c) >>
 	return True
-run _ _ (MORJI cmene fasnu) = morji cmene fasnu >> return True
+run _ _ (MORJI cmene fasnu) = writeTable cmene fasnu >> return True
 run f t (GASNU cmene sumti) = do
-	mfasnu <- tcidu cmene
+	mfasnu <- readTable cmene
 	flip (maybe $ run f t $ ErrorC $ "not defined: " ++ cmene) mfasnu $
 		\fasnu -> run f t $ fasnu sumti
 run _ t (SAVEASSVG fp) = do
