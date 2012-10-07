@@ -1,22 +1,20 @@
 module Main where
 
-import Functions(pair, notPair, Lojban(..), Selbri(..), Sumti(..), readLojban,
-	Command(..))
+import Functions(Command(..), Sumti, command, readLojban)
 
 import Text.XML.YJSVG(showSVG)
-import Graphics.UI.GLUT(initialize, mainLoop)
+import Graphics.UI.GLUT(mainLoop)
 import Graphics.UI.GLUT.Turtle(
+	initialize,
 	Field, openField, prompt, outputString, oninputtext,
 	Turtle, newTurtle, runInputs, inputs, getSVG,
 	goto, forward, backward, left, right, beginfill, endfill, undo, notundo,
 	penup, pendown, hideturtle, showturtle, shape, shapesize,
 	pensize, pencolor, fillcolor, bgcolor, windowWidth, windowHeight)
 
-import System.Environment(getProgName, getArgs)
 import System.IO.Unsafe(unsafePerformIO)
 import Control.Applicative((<$>))
 import Control.Monad(replicateM_)
-import Data.Maybe(fromMaybe)
 import Data.IORef(IORef, newIORef, readIORef)
 import Data.IORef.Tools(atomicModifyIORef_)
 
@@ -24,33 +22,17 @@ import Data.IORef.Tools(atomicModifyIORef_)
 
 main :: IO ()
 main = do
-	prgName <- getProgName
-	rawArgs <- getArgs
-	_args <- initialize prgName rawArgs
+	_args <- initialize
 	f <- openField "cakyrespa" 640 480
 	t <- newTurtle f
 	prompt f ".i "
 	shape t "turtle"
 	shapesize t 3 3
 	notundo t
-	oninputtext f $ run f t . flip command [] . readLojban
+	oninputtext f $ run f t . command . readLojban
 	mainLoop
 
-command :: Lojban -> [Sumti] -> Command
-command (Vocative "co'o") _ = COhO
-command (TenseGI "ba" b c) args = Commands (command b args) (command c args)
-command (Prenex ss b) _ = CommandList $ command b <$> mapM bagi ss
-	where
-	bagi (STense "ba" s t) = bagi s ++ bagi t
-	bagi s = [s]
-command b@(Bridi (Brivla brivla) s) args =
-	fromMaybe (Unknown b) $ maybe Nothing (($ args) . ($ s))  $ lookup brivla pair
-command b@(Bridi (NA (Brivla brivla)) s) args =
-	fromMaybe (Unknown b) $ maybe Nothing (($ args) . ($ s)) $ lookup brivla notPair
-command l _ = Unknown l
-
-type Table = [(String, [Sumti] -> Command)]
-theTable :: IORef Table
+theTable :: IORef [(String, [Sumti] -> Command)]
 theTable = unsafePerformIO $ newIORef []
 writeTable :: String -> ([Sumti] -> Command) -> IO ()
 writeTable cmene fasnu = atomicModifyIORef_ theTable ((cmene, fasnu) :)

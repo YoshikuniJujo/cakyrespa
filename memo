@@ -191,3 +191,6 @@ ErrorC を使うのならば Maybe Command にする必要はないような気�
 しかし、apply が Monad を要求している。
 むしろ Either Error Command を使って ErrorC を使わないというやりかたもある。
 いろいろ考えてみる必要がある。
+
+Types.hs を作ろうかな。
+cakyrespa を upload する前に gluturtle を upload する必要がある。

@@ -1,11 +1,4 @@
-module Functions (
-	Command(..),
-	Lojban(..),
-	Selbri(..),
-	Sumti(..),
-	readLojban,
-	pair,
-	notPair) where
+module Functions (command, Command(..), Sumti, readLojban) where
 
 import Language.Lojban.Read( readLojban,
 	Lojban(..), Selbri(..), Tag(..), Sumti(..), RelativeClause(..), Mex(..))
@@ -15,18 +8,21 @@ import Data.Maybe(fromMaybe)
 
 --------------------------------------------------------------------------------
 
-command :: Lojban -> [Sumti] -> Command
-command (Vocative "co'o") _ = COhO
-command (TenseGI "ba" b c) args = Commands (command b args) (command c args)
-command (Prenex ss b) _ = CommandList $ command b <$> mapM bagi ss
+command :: Lojban -> Command
+command = flip cmd []
+
+cmd :: Lojban -> [Sumti] -> Command
+cmd (Vocative "co'o") _ = COhO
+cmd (TenseGI "ba" b c) args = Commands (cmd b args) (cmd c args)
+cmd (Prenex ss b) _ = CommandList $ cmd b <$> mapM bagi ss
 	where
 	bagi (STense "ba" s t) = bagi s ++ bagi t
 	bagi s = [s]
-command b@(Bridi (Brivla brivla) s) args =
+cmd b@(Bridi (Brivla brivla) s) args =
 	fromMaybe (Unknown b) $ maybe Nothing (($ args) . ($ s))  $ lookup brivla pair
-command b@(Bridi (NA (Brivla brivla)) s) args =
+cmd b@(Bridi (NA (Brivla brivla)) s) args =
 	fromMaybe (Unknown b) $ maybe Nothing (($ args) . ($ s)) $ lookup brivla notPair
-command l _ = Unknown l
+cmd l _ = Unknown l
 
 notPair :: [(String, [(Tag, Sumti)] -> [Sumti] -> Maybe Command)]
 notPair = [
@@ -65,7 +61,7 @@ morji s args = do
 	GOI lerfu duhu <- lookup (FA 2) s
 	apply2 args lerfu duhu $ \l d -> case (l, d) of
 		(LerfuString cmene, LO (DUhU fasnu) _) ->
-			return $ MORJI cmene $ command fasnu
+			return $ MORJI cmene $ cmd fasnu
 		a -> return $ ErrorC $ show a
 
 klama :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
@@ -140,7 +136,7 @@ rapli s args = do
 	sumti2 <- lookup (FA 2) s
 	apply2 args sumti1 sumti2 $ \nu num -> case (nu, num) of
 		(LO (NU p) _, LI (Number n)) ->
-			return $ Repeat (round n) (command p [])
+			return $ Repeat (round n) (cmd p [])
 		_ -> return $ ErrorC $ show s
 
 clugau :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
@@ -169,7 +165,7 @@ linkargsToPOI (LO (Linkargs selbri sumti) Nothing) =
 	LO selbri $ Just $ POI $ Bridi selbri [(FA 2, sumti)]
 linkargsToPOI s = s
 
-selpli :: [Argument] -> Sumti -> Maybe Command
+selpli :: [Sumti] -> Sumti -> Maybe Command
 selpli args (LO (Brivla "penbi") (Just (POI bridi))) = penbi args bridi
 selpli args (LO (Brivla "burcu") (Just (POI bridi))) = burcu args bridi
 selpli _ (LO (Brivla "penbi") Nothing) = return KUNTI
@@ -178,7 +174,7 @@ selpli _ p = return $ UnknownSelpli p
 pebyska :: String -> Maybe Command
 pebyska skari = uncurry3 PEBYSKA <$> lookup skari skaste
 
-penbi :: [Argument] -> Lojban -> Maybe Command
+penbi :: [Sumti] -> Lojban -> Maybe Command
 penbi _ (Bridi (Brivla s) []) = pebyska s
 penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = applyLO args s pebyska
 penbi args (Bridi (ME s) []) = applyLO args s pebyska
@@ -189,7 +185,7 @@ penbi _ p = return $ ErrorC $ "penbi: no such penbi" ++ show p
 burska :: String -> Maybe Command
 burska skari = uncurry3 BURSKA <$> lookup skari skaste
 
-burcu :: [Argument] -> Lojban -> Maybe Command
+burcu :: [Sumti] -> Lojban -> Maybe Command
 burcu _ (Bridi (Brivla skari) []) = burska skari
 burcu a (Bridi (ME s) []) = applyLO a s burska
 burcu a (Bridi (SE 2 (Brivla "skari")) [(FA 1, s)]) = applyLO a s burska
@@ -231,7 +227,7 @@ lahu args s = do
 	l <- lookup (BAI Nothing "la'u") s
 	applyDouble args l return
 
-type ReadCommand = [(Tag, Sumti)] -> [Argument] -> Maybe Command
+type ReadCommand = [(Tag, Sumti)] -> [Sumti] -> Maybe Command
 
 crakla :: ReadCommand
 crakla terms args = do
@@ -242,7 +238,6 @@ rixykla :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
 rixykla s args = do
 	KOhA "ko" <- lookup (FA 1) s
 	return $ RIXYKLA $ fromMaybe 100 $ lahu args s
---	return $ RIXYKLA $ maybe 100 (\(Left d) -> d) $ lahu s
 
 carna :: ReadCommand
 carna terms args = do
@@ -258,22 +253,22 @@ carna terms args = do
 		_ -> fail "bad"
 
 apply2 :: Monad m => [Sumti] -> Sumti -> Sumti -> (Sumti -> Sumti -> m a) -> m a
-apply2 args s1 s2 cmd = apply args s2 =<< apply args s1 (return . cmd)
+apply2 args s1 s2 cm = apply args s2 =<< apply args s1 (return . cm)
 
 apply :: Monad m => [Sumti] -> Sumti -> (Sumti -> m a) -> m a
-apply args (CEhU i) cmd
-	| length args >= i = cmd $ args !! (i - 1)
+apply args (CEhU i) cm
+	| length args >= i = cm $ args !! (i - 1)
 	| otherwise = fail "apply: too few args"
-apply _ s cmd = cmd s
+apply _ s cm = cm s
 
 applyDouble :: Monad m => [Sumti] -> Sumti -> (Double -> m a) -> m a
-applyDouble args sumti cmd = apply args sumti $ \s -> case s of
-	LI (Number d) -> cmd d
+applyDouble args sumti cm = apply args sumti $ \s -> case s of
+	LI (Number d) -> cm d
 	_ -> fail $ "applyDouble: bad sumti " ++ show s
 
 applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
-applyLO args sumti cmd = apply args sumti $ \s -> case s of
-	LO (Brivla d) Nothing -> cmd d
+applyLO args sumti cm = apply args sumti $ \s -> case s of
+	LO (Brivla d) Nothing -> cm d
 	_ -> fail $ "applyLO: bad sumti " ++ show s
 
 data Command
@@ -298,11 +293,8 @@ data Command
 	| SAVEASSVG FilePath
 	| SAVEASCAK FilePath
 	| READFILE FilePath
-	| MORJI String ([Argument] -> Command)
-	| GASNU String [Argument]
+	| MORJI String ([Sumti] -> Command)
+	| GASNU String [Sumti]
 	| KUNTI
 	| COhO | Unknown Lojban | ParseErrorC | UnknownSelpli Sumti
 	| ErrorC String
---	deriving Show
-
-type Argument = Sumti
