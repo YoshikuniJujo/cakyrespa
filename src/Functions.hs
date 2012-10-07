@@ -1,6 +1,6 @@
 module Functions (command, Command(..), Sumti, readLojban) where
 
-import Language.Lojban.Read( readLojban,
+import Read( readLojban,
 	Lojban(..), Selbri(..), Tag(..), Sumti(..), RelativeClause(..), Mex(..))
 
 import Control.Applicative((<$>))

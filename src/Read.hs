@@ -1,4 +1,4 @@
-module Language.Lojban.Read (
+module Read (
 	Lojban(..),
 	Selbri(..),
 	Sumti(..),

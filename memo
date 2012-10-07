@@ -194,3 +194,5 @@ ErrorC を使うのならば Maybe Command にする必要はないような気�
 
 Types.hs を作ろうかな。
 cakyrespa を upload する前に gluturtle を upload する必要がある。
+
+Language.Lojban.Read を top にもってきてしまおうかな。
