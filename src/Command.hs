@@ -1,7 +1,6 @@
-module Functions (command, Command(..), Sumti, readLojban) where
+module Command (command, Command(..), Sumti) where
 
-import Read( readLojban,
-	Lojban(..), Selbri(..), Tag(..), Sumti(..), RelativeClause(..), Mex(..))
+import Types
 
 import Control.Applicative((<$>))
 import Data.Maybe(fromMaybe)
@@ -270,31 +269,3 @@ applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
 applyLO args sumti cm = apply args sumti $ \s -> case s of
 	LO (Brivla d) Nothing -> cm d
 	_ -> fail $ "applyLO: bad sumti " ++ show s
-
-data Command
-	= KLAMA Double Double
-	| CRAKLA Double | RIXYKLA Double
-	| ZUNLE Double | PRITU Double
-	| PEBYCISNI Double
-	| PEBYSKA Int Int Int
-	| BURSKA Int Int Int
-	| FLOSKA Int Int Int
-	| COhACLUGAU
-	| COhUCLUGAU
-	| Commands Command Command
-	| CommandList [Command]
-	| Repeat Int Command
-	| XRUTI
-	| CISNI Double
-	| NAPILNOLOPENBI
-	| PILNOLOPENBI
-	| NAVISKA
-	| VISKA
-	| SAVEASSVG FilePath
-	| SAVEASCAK FilePath
-	| READFILE FilePath
-	| MORJI String ([Sumti] -> Command)
-	| GASNU String [Sumti]
-	| KUNTI
-	| COhO | Unknown Lojban | ParseErrorC | UnknownSelpli Sumti
-	| ErrorC String

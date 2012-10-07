@@ -196,3 +196,5 @@ Types.hs を作ろうかな。
 cakyrespa を upload する前に gluturtle を upload する必要がある。
 
 Language.Lojban.Read を top にもってきてしまおうかな。
+
+Run の IORef を StateT IO に変えよう。
