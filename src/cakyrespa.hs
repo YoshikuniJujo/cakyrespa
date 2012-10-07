@@ -49,15 +49,15 @@ command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla o
 	"galfi" -> galfi s args
 	"tcidu" -> tcidu s args
 	"rejgau" -> rejgau s args
-	"viska" -> viska s
-	"cisni" -> cisni s
-	"xruti" -> xruti s
-	"rapli" -> rapli s
+	"viska" -> viska s args
+	"cisni" -> cisni s args
+	"xruti" -> xruti s args
+	"rapli" -> rapli s args
 	"carna" -> carna s args
 	"crakla" -> crakla s args
 	"rixykla" -> rixykla s args
 	"pilno" -> pilno s args
-	"clugau" -> clugau s
+	"clugau" -> clugau s args
 	_ -> Nothing
 command b@(Bridi (NA (Brivla brivla)) s) _args = fromMaybe (Unknown b) $ case brivla of
 	"viska" -> naViska s
@@ -123,8 +123,8 @@ rejgau s args = do
 		(ZOI fp, LA (Left "syvygyd")) -> return $ SAVEASSVG fp
 		_ -> error $ show tai
 
-viska :: [(Tag, Sumti)] -> Maybe Command
-viska s = do
+viska :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+viska s _ = do
 	KOhA "ko" <- lookup (FA 2) s
 	return VISKA
 
@@ -138,25 +138,30 @@ naPilno s = do
 	KOhA "ko" <- lookup (FA 1) s
 	return NAPILNOLOPENBI
 
-cisni :: [(Tag, Sumti)] -> Maybe Command
-cisni s = do
-	LI (Number n) <- lookup (FA 1) s
+cisni :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+cisni s args = do
+	sumti <- lookup (FA 1) s
 	KOhA "ko" <- lookup (FA 2) s
-	return $ CISNI n
+	apply args sumti $ \smt -> case smt of
+		LI (Number n) -> return $ CISNI n
+		_ -> return $ ErrorC $ show s
 
-xruti :: [(Tag, Sumti)] -> Maybe Command
-xruti s = do
+xruti :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+xruti s _ = do
 	KOhA "ko" <- lookup (FA 1) s
 	return XRUTI
 
-rapli :: [(Tag, Sumti)] -> Maybe Command
-rapli s = do
-	LO (NU p) _ <- lookup (FA 1) s
-	LI (Number n) <- lookup (FA 2) s
-	return $ Repeat (round n) (command p [])
+rapli :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+rapli s args = do
+	sumti1 <- lookup (FA 1) s
+	sumti2 <- lookup (FA 2) s
+	apply2 args sumti1 sumti2 $ \nu num -> case (nu, num) of
+		(LO (NU p) _, LI (Number n)) ->
+			return $ Repeat (round n) (command p [])
+		_ -> return $ ErrorC $ show s
 
-clugau :: [(Tag, Sumti)] -> Maybe Command
-clugau s = do
+clugau :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+clugau s _ = do
 	KOhA "ko" <- lookup (FA 1) s
 	case ((Time ["co'a"], KU) `elem` s, (Time ["co'u"], KU) `elem` s) of
 		(True, False) -> return COhACLUGAU
