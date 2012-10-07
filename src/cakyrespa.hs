@@ -41,7 +41,10 @@ main = do
 command :: Lojban -> [Sumti] -> Command
 command (Vocative "co'o") _ = COhO
 command (TenseGI "ba" b c) args = Commands (command b args) (command c args)
-command (Prenex ss b) _ = CommandList $ command b <$> mapM sumtiToArgument ss
+command (Prenex ss b) _ = CommandList $ command b <$> mapM bagi ss
+	where
+	bagi (STense "ba" s t) = bagi s ++ bagi t
+	bagi s = [s]
 command b@(Bridi (Brivla brivla) s) args =
 	fromMaybe (Unknown b) $ maybe Nothing (($ args) . ($ s))  $ lookup brivla pair
 command b@(Bridi (NA (Brivla brivla)) s) args =
@@ -284,7 +287,6 @@ carna terms args = do
 
 apply2 :: Monad m => [Sumti] -> Sumti -> Sumti -> (Sumti -> Sumti -> m a) -> m a
 apply2 args s1 s2 cmd = apply args s2 =<< apply args s1 (return . cmd)
--- apply args s1 cmd :: 
 
 apply :: Monad m => [Sumti] -> Sumti -> (Sumti -> m a) -> m a
 apply args (CEhU i) cmd
@@ -301,10 +303,6 @@ applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
 applyLO args sumti cmd = apply args sumti $ \s -> case s of
 	LO (Brivla d) Nothing -> cmd d
 	_ -> fail $ "applyLO: bad sumti " ++ show s
-
-sumtiToArgument :: Sumti -> [Sumti]
-sumtiToArgument (STense "ba" s t) = sumtiToArgument s ++ sumtiToArgument t
-sumtiToArgument s = [s]
 
 data Command
 	= KLAMA Double Double
