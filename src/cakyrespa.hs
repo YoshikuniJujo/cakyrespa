@@ -42,28 +42,36 @@ command :: Lojban -> [Sumti] -> Command
 command (Vocative "co'o") _ = COhO
 command (TenseGI "ba" b c) args = Commands (command b args) (command c args)
 command (Prenex ss b) _ = CommandList $ command b <$> mapM sumtiToArgument ss
-command b@(Bridi (Brivla brivla) s) args = fromMaybe (Unknown b) $ case brivla of
-	"gasnu" -> gasnu s args
-	"morji" -> morji s args
-	"klama" -> klama s args
-	"galfi" -> galfi s args
-	"tcidu" -> tcidu s args
-	"rejgau" -> rejgau s args
-	"viska" -> viska s args
-	"cisni" -> cisni s args
-	"xruti" -> xruti s args
-	"rapli" -> rapli s args
-	"carna" -> carna s args
-	"crakla" -> crakla s args
-	"rixykla" -> rixykla s args
-	"pilno" -> pilno s args
-	"clugau" -> clugau s args
-	_ -> Nothing
-command b@(Bridi (NA (Brivla brivla)) s) _args = fromMaybe (Unknown b) $ case brivla of
-	"viska" -> naViska s
-	"pilno" -> naPilno s
-	_ -> Nothing
+command b@(Bridi (Brivla brivla) s) args =
+	fromMaybe (Unknown b) $ maybe Nothing (($ args) . ($ s))  $ lookup brivla pair
+command b@(Bridi (NA (Brivla brivla)) s) args =
+	fromMaybe (Unknown b) $ maybe Nothing (($ args) . ($ s)) $ lookup brivla notPair
 command l _ = Unknown l
+
+notPair :: [(String, [(Tag, Sumti)] -> [Sumti] -> Maybe Command)]
+notPair = [
+	("viska", naViska),
+	("pilno", naPilno)
+ ]
+
+pair :: [(String, [(Tag, Sumti)] -> [Sumti] -> Maybe Command)]
+pair = [
+	("gasnu", gasnu),
+	("morji",  morji),
+	("klama", klama),
+	("galfi", galfi),
+	("tcidu", tcidu),
+	("rejgau", rejgau),
+	("viska", viska),
+	("cisni", cisni),
+	("xruti", xruti),
+	("rapli", rapli),
+	("carna", carna),
+	("crakla", crakla),
+	("rixykla", rixykla),
+	("pilno", pilno),
+	("clugau", clugau)
+ ]
 
 updateReaders :: (Lojban -> Maybe Command) -> Lojban -> Maybe ([Argument] -> Command)
 updateReaders reader text = do
@@ -128,13 +136,13 @@ viska s _ = do
 	KOhA "ko" <- lookup (FA 2) s
 	return VISKA
 
-naViska :: [(Tag, Sumti)] -> Maybe Command
-naViska s = do
+naViska :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+naViska s _ = do
 	KOhA "ko" <- lookup (FA 2) s
 	return NAVISKA
 
-naPilno :: [(Tag, Sumti)] -> Maybe Command
-naPilno s = do
+naPilno :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
+naPilno s _ = do
 	KOhA "ko" <- lookup (FA 1) s
 	return NAPILNOLOPENBI
 
