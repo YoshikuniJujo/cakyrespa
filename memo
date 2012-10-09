@@ -198,3 +198,14 @@ cakyrespa を upload する前に gluturtle を upload する必要がある。
 Language.Lojban.Read を top にもってきてしまおうかな。
 
 Run の IORef を StateT IO に変えよう。
+
+2012.10.09 Tue.
+
+Run から unsafePerformIO を消したが、
+そもそも Run は Field や Turtle の状態を変化させているということを考えると、
+unsafePerformIO を使っても無害な気もしてきた。
+
+そして main は確実にすっきりする。
+
+ただ、run を複数にしようとしたときには問題が生じるな。
+将来の拡張性を考えるとやはり unsafePerformIO は使わないほうがいいな。
