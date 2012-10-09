@@ -1,5 +1,5 @@
 module Types (
-	Command(..),
+	Minde(..),
 	Lojban(..), Selbri(..), Tag(..), Sumti(..), Mex(..), RelativeClause(..)
 ) where
 
@@ -7,7 +7,7 @@ import Language.Lojban.Parser(Free(..))
 
 --------------------------------------------------------------------------------
 
-data Command
+data Minde
 	= KLAMA Double Double
 	| CRAKLA Double				| RIXYKLA Double
 	| ZUNLE Double				| PRITU Double
@@ -18,12 +18,12 @@ data Command
 	| NAVISKA				| VISKA
 	| CISNI Double
 	| XRUTI
-	| MORJI String ([Sumti] -> Command)	| GASNU String [Sumti]
-	| SAVEASCAK FilePath			| READFILE FilePath
-	| SAVEASSVG FilePath
-	| CommandList [Command]
+	| MORJI String ([Sumti] -> Minde)	| GASNU String [Sumti]
+	| REJGAUSETAICAK FilePath		| TCIDU FilePath
+	| REJGAUSETAISVG FilePath
 	| COhO
-	| ErrorC String
+	| MIDSTE [Minde]
+	| SRERA String
 
 data Lojban
 	= Bridi Selbri [(Tag, Sumti)]

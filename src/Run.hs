@@ -1,6 +1,6 @@
 module Run (run) where
 
-import Types(Command(..), Sumti)
+import Types(Minde(..), Sumti)
 
 import Text.XML.YJSVG(showSVG)
 import Graphics.UI.GLUT.Turtle(
@@ -22,7 +22,7 @@ readT k t = lookup k <$> readIORef t
 writeT :: a -> b -> IORef [(a, b)] -> IO ()
 writeT k v t = atomicModifyIORef_ t ((k, v) :)
 
-run :: Field -> Turtle -> IORef [(String, [Sumti] -> Command)] -> Command -> IO Bool
+run :: Field -> Turtle -> IORef [(String, [Sumti] -> Minde)] -> Minde -> IO Bool
 run _ t _ (KLAMA x y) = goto t x y >> return True
 run _ t _ (CRAKLA d) = forward t d >> return True
 run _ t _ (RIXYKLA d) = backward t d >> return True
@@ -41,21 +41,21 @@ run _ t _ PILNOLOPENBI = pendown t >> return True
 run _ t _ NAVISKA = hideturtle t >> return True
 run _ t _ VISKA = showturtle t >> return True
 run _ _ _ COhO = return False
-run f t tbl (CommandList cl) = mapM_ (run f t tbl) cl >> return True
+run f t tbl (MIDSTE cl) = mapM_ (run f t tbl) cl >> return True
 run _ _ tbl (MORJI cmene fasnu) = writeT cmene fasnu tbl >> return True
 run f t tbl (GASNU cmene sumti) = do
 	mfasnu <- readT cmene tbl
-	flip (maybe $ run f t tbl $ ErrorC $ "not defined: " ++ cmene) mfasnu $
+	flip (maybe $ run f t tbl $ SRERA $ "not defined: " ++ cmene) mfasnu $
 		\fasnu -> run f t tbl $ fasnu sumti
-run _ t _ (SAVEASSVG fp) = do
+run _ t _ (REJGAUSETAISVG fp) = do
 	w <- windowWidth t
 	h <- windowHeight t
 	svg <- getSVG t
 	writeFile fp $ showSVG w h svg
 	return True
-run _ t _ (SAVEASCAK fp) = inputs t >>= writeFile fp . show >> return True
-run _ t _ (READFILE fp) = readFile fp >>= runInputs t . read >> return True
-run f _ _ (ErrorC str) = do
+run _ t _ (REJGAUSETAICAK fp) = inputs t >>= writeFile fp . show >> return True
+run _ t _ (TCIDU fp) = readFile fp >>= runInputs t . read >> return True
+run f _ _ (SRERA str) = do
 	outputString f ".i mi na jimpe"
 	putStrLn $ "error: " ++ str
 	return True
