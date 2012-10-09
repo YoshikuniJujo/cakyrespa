@@ -12,16 +12,16 @@ command = flip cmd []
 
 cmd :: Lojban -> [Sumti] -> Command
 cmd (Vocative "co'o") _ = COhO
-cmd (TenseGI "ba" b c) args = Commands (cmd b args) (cmd c args)
+cmd (TenseGI "ba" b c) args = CommandList $ [cmd b args, cmd c args]
 cmd (Prenex ss b) _ = CommandList $ cmd b <$> mapM bagi ss
 	where
 	bagi (STense "ba" s t) = bagi s ++ bagi t
 	bagi s = [s]
 cmd b@(Bridi (Brivla brivla) s) args =
-	fromMaybe (Unknown b) $ maybe Nothing (($ args) . ($ s))  $ lookup brivla pair
+	fromMaybe (ErrorC $ show b) $ maybe Nothing (($ args) . ($ s))  $ lookup brivla pair
 cmd b@(Bridi (NA (Brivla brivla)) s) args =
-	fromMaybe (Unknown b) $ maybe Nothing (($ args) . ($ s)) $ lookup brivla notPair
-cmd l _ = Unknown l
+	fromMaybe (ErrorC $ show b) $ maybe Nothing (($ args) . ($ s)) $ lookup brivla notPair
+cmd l _ = ErrorC $ show l
 
 notPair :: [(String, [(Tag, Sumti)] -> [Sumti] -> Maybe Command)]
 notPair = [
@@ -135,7 +135,7 @@ rapli s args = do
 	sumti2 <- lookup (FA 2) s
 	apply2 args sumti1 sumti2 $ \nu num -> case (nu, num) of
 		(LO (NU p) _, LI (Number n)) ->
-			return $ Repeat (round n) (cmd p [])
+			return $ CommandList $ replicate (round n) (cmd p [])
 		_ -> return $ ErrorC $ show s
 
 clugau :: [(Tag, Sumti)] -> [Sumti] -> Maybe Command
@@ -151,8 +151,8 @@ pilno terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
 	binxo <- selpli args . linkargsToPOI =<< lookup (FA 2) terms
 	return $ if (Time ["ba"], KU) `elem` terms
-		then binxo
-		else Commands binxo PILNOLOPENBI
+		then CommandList binxo
+		else CommandList $ binxo ++ [PILNOLOPENBI]
 
 uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (x, y, z) = f x y z
@@ -164,11 +164,11 @@ linkargsToPOI (LO (Linkargs selbri sumti) Nothing) =
 	LO selbri $ Just $ POI $ Bridi selbri [(FA 2, sumti)]
 linkargsToPOI s = s
 
-selpli :: [Sumti] -> Sumti -> Maybe Command
-selpli args (LO (Brivla "penbi") (Just (POI bridi))) = penbi args bridi
-selpli args (LO (Brivla "burcu") (Just (POI bridi))) = burcu args bridi
-selpli _ (LO (Brivla "penbi") Nothing) = return KUNTI
-selpli _ p = return $ UnknownSelpli p
+selpli :: [Sumti] -> Sumti -> Maybe [Command]
+selpli args (LO (Brivla "penbi") (Just (POI bridi))) = (: []) <$> penbi args bridi
+selpli args (LO (Brivla "burcu") (Just (POI bridi))) = (: []) <$> burcu args bridi
+selpli _ (LO (Brivla "penbi") Nothing) = return [] -- return KUNTI
+selpli _ p = return [ErrorC $ show p]
 
 pebyska :: String -> Maybe Command
 pebyska skari = uncurry3 PEBYSKA <$> lookup skari skaste

@@ -9,30 +9,20 @@ import Language.Lojban.Parser(Free(..))
 
 data Command
 	= KLAMA Double Double
-	| CRAKLA Double | RIXYKLA Double
-	| ZUNLE Double | PRITU Double
-	| PEBYCISNI Double
-	| PEBYSKA Int Int Int
-	| BURSKA Int Int Int
-	| FLOSKA Int Int Int
-	| COhACLUGAU
-	| COhUCLUGAU
-	| Commands Command Command
-	| CommandList [Command]
-	| Repeat Int Command
-	| XRUTI
+	| CRAKLA Double				| RIXYKLA Double
+	| ZUNLE Double				| PRITU Double
+	| COhACLUGAU				| COhUCLUGAU
+	| PEBYCISNI Double			| PEBYSKA Int Int Int
+	| BURSKA Int Int Int			| FLOSKA Int Int Int
+	| NAPILNOLOPENBI			| PILNOLOPENBI
+	| NAVISKA				| VISKA
 	| CISNI Double
-	| NAPILNOLOPENBI
-	| PILNOLOPENBI
-	| NAVISKA
-	| VISKA
+	| XRUTI
+	| MORJI String ([Sumti] -> Command)	| GASNU String [Sumti]
+	| SAVEASCAK FilePath			| READFILE FilePath
 	| SAVEASSVG FilePath
-	| SAVEASCAK FilePath
-	| READFILE FilePath
-	| MORJI String ([Sumti] -> Command)
-	| GASNU String [Sumti]
-	| KUNTI
-	| COhO | Unknown Lojban | ParseErrorC | UnknownSelpli Sumti
+	| CommandList [Command]
+	| COhO
 	| ErrorC String
 
 data Lojban

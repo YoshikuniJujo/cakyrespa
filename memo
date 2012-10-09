@@ -209,3 +209,9 @@ unsafePerformIO を使っても無害な気もしてきた。
 
 ただ、run を複数にしようとしたときには問題が生じるな。
 将来の拡張性を考えるとやはり unsafePerformIO は使わないほうがいいな。
+
+Types の Commands と CommandList と Repeat は CommandList にまとめられるだろう。
+
+Unknown や UnknownSelpli や ParseErrorC は ErrorC にまとめられるだろう。
+
+data Command を lojban 名で統一したい。
