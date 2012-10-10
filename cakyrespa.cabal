@@ -24,7 +24,7 @@ source-repository	head
 executable	cakyrespa
     hs-source-dirs:	src
     main-is:		cakyrespa.hs
-    other-modules:	Minde, Tcidu, Jimpe, Klesi
+    other-modules:	Minde, Jimpe, Tcidu, Liste, Klesi
     build-depends:	base >3 && <5, lojbanParser >= 0.1.5,
         gluturtle >= 0.0.22, GLUT, yjsvg, yjtools >= 0.9.18
     ghc-options:	-Wall
