@@ -1,6 +1,6 @@
 module Main where
 
-import Minde(run)
+import Minde(minde)
 import Jimpe(command)
 import Tcidu(readLojban)
 
@@ -23,5 +23,5 @@ main = do
 	shape t "turtle"
 	shapesize t 3 3
 	notundo t
-	oninputtext f $ run f t env . command . readLojban
+	oninputtext f $ minde f t env . command . readLojban
 	mainLoop
