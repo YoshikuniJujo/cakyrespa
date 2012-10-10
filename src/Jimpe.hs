@@ -118,37 +118,34 @@ galfi terms args = do
 pilno terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
 	sp <- lookup (FA 2) terms
-	apply args sp $ \s ->
-		flip (selpli args) terms $ linkargsToPOI s
+	apply args sp $ selpli terms args . be2poi
 
-selpli :: [Sumti] -> Sumti -> [(Tag, Sumti)] -> Maybe Minde
-selpli args (LO (Brivla "penbi") (Just (POI bridi))) terms = do
+selpli :: [(Tag, Sumti)] -> [Sumti] -> Sumti -> Maybe Minde
+selpli terms args (LO (Brivla "penbi") (Just (POI bridi))) = do
 	p <- penbi args bridi
 	return $ if (Time ["ba"], KU) `elem` terms
 		then p
 		else MIDYSTE [p, PILNOLOPENBI]
-selpli args (LO (Brivla "burcu") (Just (POI bridi))) _ = burcu args bridi
-selpli _ (LO (Brivla "penbi") Nothing) _ = return PILNOLOPENBI
-selpli args (Relative s r) terms = apply args s $ \pb -> case pb of
-	LO (Brivla "penbi") _ -> selpli args (LO (Brivla "penbi") (Just r)) terms
-	LO (Brivla "burcu") _ -> selpli args (LO (Brivla "burcu") (Just r)) terms
+selpli _ args (LO (Brivla "burcu") (Just (POI bridi))) = burcu args bridi
+selpli _ _ (LO (Brivla "penbi") Nothing) = return PILNOLOPENBI
+selpli terms args (Relative s r) = apply args s $ \pb -> case pb of
+	LO (Brivla "penbi") _ -> selpli terms args (LO (Brivla "penbi") (Just r))
+	LO (Brivla "burcu") _ -> selpli terms args (LO (Brivla "burcu") (Just r))
 	_ -> fail "selpli: bad selpli"
-selpli _ p _ = return $ SRERA $ "selpli: " ++ show p
-
-pebyska :: String -> Maybe Minde
-pebyska skari = uncurry3 PEBYSKA <$> lookup skari skaste
+selpli _ _ p = return $ SRERA $ "selpli: unknown selpli " ++ show p
 
 penbi :: [Sumti] -> Text -> Maybe Minde
 penbi _ (Bridi (Brivla s) []) = pebyska s
 penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = applyLO args s pebyska
 penbi args (Bridi (ME s) []) = applyLO args s pebyska
-penbi args (Bridi (Brivla "cisni") [(FA 1, s)]) = apply args s $ \smt -> case smt of
-	LI (Number d) -> return $ PEBYCISNI d
-	_ -> fail "bad"
-penbi _ p = return $ SRERA $ "penbi: no such penbi" ++ show p
+penbi args (Bridi (Brivla "cisni") [(FA 1, cisnysu'i)]) =
+	apply args cisnysu'i $ \cs -> case cs of
+		LI (Number cisnyna'u) -> return $ PEBYCISNI cisnyna'u
+		_ -> fail "bad"
+penbi _ text = return $ SRERA $ "penbi: no such penbi" ++ show text
 
-burska :: String -> Maybe Minde
-burska skari = uncurry3 BURSKA <$> lookup skari skaste
+pebyska :: String -> Maybe Minde
+pebyska skari = uncurry3 PEBYSKA <$> lookup skari skaste
 
 burcu :: [Sumti] -> Text -> Maybe Minde
 burcu _ (Bridi (Brivla skari) []) = burska skari
@@ -157,17 +154,20 @@ burcu a (Bridi (SE 2 (Brivla "skari")) [(FA 1, s)]) = applyLO a s burska
 burcu a (Bridi (Brivla "skari") [(FA 2, s)]) = applyLO a s burska
 burcu _ _ = return $ SRERA "burcu: no such burcu"
 
+burska :: String -> Maybe Minde
+burska skari = uncurry3 BURSKA <$> lookup skari skaste
+
 applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
 applyLO args sumti cm = apply args sumti $ \s -> case s of
 	LO (Brivla d) Nothing -> cm d
 	_ -> fail $ "applyLO: bad sumti " ++ show s
 
-linkargsToPOI :: Sumti -> Sumti
-linkargsToPOI (LO (BE selbri (SFIhO modal sumti)) Nothing) =
+be2poi :: Sumti -> Sumti
+be2poi (LO (BE selbri (SFIhO modal sumti)) Nothing) =
 	LO selbri $ Just $ POI $ Bridi modal [(FA 1, sumti)]
-linkargsToPOI (LO (BE selbri sumti) Nothing) =
+be2poi (LO (BE selbri sumti) Nothing) =
 	LO selbri $ Just $ POI $ Bridi selbri [(FA 2, sumti)]
-linkargsToPOI s = s
+be2poi s = s
 
 cisni s args = do
 	sumti <- lookup (FA 1) s
