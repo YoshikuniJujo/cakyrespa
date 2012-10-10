@@ -80,9 +80,10 @@ rixykla terms args = do
 carna terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
 	farna <- case lookup (FA 3) terms of
-		Just (LO (Brivla zp) _) -> return zp
 		Nothing -> return "zunle"
-		_ -> fail "carna: bad direction"
+		Just sumti -> apply args sumti $ \s -> case s of
+			LO (Brivla zp) _ -> return zp
+			_ -> fail "carna: bad direction"
 	case farna of
 		"zunle" -> return $ ZUNLE $ fromMaybe 90 $ lahu terms args
 		"pritu" -> return $ PRITU $ fromMaybe 90 $ lahu terms args
