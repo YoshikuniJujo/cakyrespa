@@ -215,3 +215,7 @@ Types の Commands と CommandList と Repeat は CommandList にまとめられ
 Unknown や UnknownSelpli や ParseErrorC は ErrorC にまとめられるだろう。
 
 data Command を lojban 名で統一したい。
+
+2012.10.10 Wed.
+
+tag -> tcita

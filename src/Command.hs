@@ -1,6 +1,6 @@
 module Command (command, Minde(..), Sumti) where
 
-import Types
+import Klesi
 
 import Control.Applicative((<$>))
 import Data.Maybe(fromMaybe)

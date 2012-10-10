@@ -1,4 +1,4 @@
-module Types (
+module Klesi (
 	Minde(..),
 	Lojban(..), Selbri(..), Tag(..), Sumti(..), Mex(..), RelativeClause(..)
 ) where

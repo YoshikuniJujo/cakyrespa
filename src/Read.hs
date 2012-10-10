@@ -1,6 +1,6 @@
 module Read (readLojban) where
 
-import Types
+import Klesi
 
 import Language.Lojban.Parser hiding (
 	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,

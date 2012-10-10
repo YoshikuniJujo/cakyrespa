@@ -1,6 +1,6 @@
 module Run (run) where
 
-import Types(Minde(..), Sumti)
+import Klesi(Minde(..), Sumti)
 
 import Text.XML.YJSVG(showSVG)
 import Graphics.UI.GLUT.Turtle(
