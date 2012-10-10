@@ -6,6 +6,7 @@ import Klesi(
 
 import Control.Applicative((<$>))
 import Data.Maybe(fromMaybe)
+import Data.Tuple.Tools(uncurry3)
 
 --------------------------------------------------------------------------------
 
@@ -26,7 +27,9 @@ jmi (TagGI "ba" pavbri relbri) sumti =
 jmi (Vocative "co'o") _ = COhO
 jmi l _ = SRERA $ show l
 
-midste, narmidste :: [(String, [(Tag, Sumti)] -> [Sumti] -> Maybe Minde)]
+type Midytcidu = [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
+
+midste, narmidste :: [(String, Midytcidu)]
 midste = [
 	("klama", klama),
 	("crakla", crakla),
@@ -44,33 +47,62 @@ midste = [
 	("rejgau", rejgau),
 	("tcidu", tcidu)]
 narmidste = [
-	("pilno", naPilno),
-	("viska", naViska)]
+	("pilno", napilno),
+	("viska", naviska)]
 
-gasnu :: ReadCommand
-gasnu s a = do
-	KOhA "ko" <- lookup (FA 1) s
-	LerfuString cmene <- lookup (FA 2) s
-	return $ GASNU cmene a
+apply :: Monad m => [Sumti] -> Sumti -> (Sumti -> m a) -> m a
+apply args (CEhU i) cm
+	| length args >= i = cm $ args !! (i - 1)
+	| otherwise = fail "apply: too few args"
+apply _ s cm = cm s
 
-morji :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-morji s args = do
-	KOhA "ko" <- lookup (FA 1) s
-	GOI lerfu duhu <- lookup (FA 2) s
-	apply2 args lerfu duhu $ \l d -> case (l, d) of
-		(LerfuString cmene, LO (DUhU fasnu) _) ->
-			return $ MORJI cmene $ jmi fasnu
-		a -> return $ SRERA $ show a
+apply2 :: Monad m => [Sumti] -> Sumti -> Sumti -> (Sumti -> Sumti -> m a) -> m a
+apply2 args s1 s2 cm = apply args s2 =<< apply args s1 (return . cm)
 
-klama :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-klama s args = do
-	KOhA "ko" <- lookup (FA 1) s
-	sumti <- lookup (FA 2 ) s
-	apply args sumti $ \smt -> case smt of
+klama, crakla, rixykla, carna, clugau, galfi, pilno, cisni, viska, rapli, xruti,
+	morji, gasnu, rejgau, tcidu, napilno, naviska :: Midytcidu
+
+klama terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	selkla <- lookup (FA 2) terms
+	apply args selkla $ \sk -> case sk of
 		LI (JOhI [Number x, Number y]) -> return $ KLAMA x y
-		_ -> return $ SRERA $ show s
+		_ -> return $ SRERA $ show terms ++ " " ++ show args
 
-galfi :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
+crakla terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	return $ maybe (CRAKLA 100)  CRAKLA $ lahu args terms
+
+rixykla s args = do
+	KOhA "ko" <- lookup (FA 1) s
+	return $ RIXYKLA $ fromMaybe 100 $ lahu args s
+
+carna terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	farna <- case lookup (FA 3) terms of
+		Just (LO (Brivla zp) _) -> Just zp
+		Nothing -> Just "zunle"
+		_ -> Nothing
+	let	jganu = fromMaybe 90 $ lahu args terms
+	case farna of
+		"zunle" -> return $ ZUNLE jganu
+		"pritu" -> return $ PRITU jganu
+		_ -> fail "bad"
+
+lahu :: [Sumti] -> [(Tag, Sumti)] -> Maybe Double
+lahu args s = do
+	l <- lookup (BAI 1 "la'u") s
+	apply args l $ \smt -> case smt of
+		LI (Number d) -> return d
+		_ -> fail "bad"
+
+clugau s _ = do
+	KOhA "ko" <- lookup (FA 1) s
+	case ((Time ["co'a"], KU) `elem` s, (Time ["co'u"], KU) `elem` s) of
+		(True, False) -> return COhACLUGAU
+		(False, True) -> return COhUCLUGAU
+		_ -> fail "bad"
+
 galfi s args = do
 	TUhA (KOhA "ko") <- lookup (FA 1) s
 	LO (Brivla "foldi") Nothing <- lookup (FA 2) s
@@ -81,87 +113,12 @@ galfi s args = do
 			return $ let (r, g, b) = clr in FLOSKA r g b
 		_ -> return $ SRERA $ show s
 
-tcidu :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-tcidu s args = do
-	KOhA "ko" <- lookup (FA 1) s
-	sumti <- lookup (FA 2) s
-	apply args sumti $ \smt -> case smt of
-		LA (Right (ME (ZOI fp))) -> return $ TCIDU fp
-		LAhE (ZOI fp) -> return $ TCIDU fp
-		_ -> return $ SRERA $ show s
-
-rejgau :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-rejgau s args = do
-	KOhA "ko" <- lookup (FA 1) s
-	zfp <- lookup (BAI 1 "me'e") s
-	tai <- lookup (BAI 2 "tai") s
-	apply2 args zfp tai $ \z t -> case (z, t) of
-		(ZOI fp, LA (Right (Brivla "cakyrespa"))) -> return $ REJGAUSETAICAK fp
-		(ZOI fp, LA (Left "syvygyd")) -> return $ REJGAUSETAISVG fp
-		_ -> error $ show tai
-
-viska :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-viska s _ = do
-	KOhA "ko" <- lookup (FA 2) s
-	return VISKA
-
-naViska :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-naViska s _ = do
-	KOhA "ko" <- lookup (FA 2) s
-	return NAVISKA
-
-naPilno :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-naPilno s _ = do
-	KOhA "ko" <- lookup (FA 1) s
-	return NAPILNOLOPENBI
-
-cisni :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-cisni s args = do
-	sumti <- lookup (FA 1) s
-	KOhA "ko" <- lookup (FA 2) s
-	apply args sumti $ \smt -> case smt of
-		LI (Number n) -> return $ CISNI n
-		_ -> return $ SRERA $ show s
-
-xruti :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-xruti s _ = do
-	KOhA "ko" <- lookup (FA 1) s
-	return XRUTI
-
-rapli :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-rapli s args = do
-	sumti1 <- lookup (FA 1) s
-	sumti2 <- lookup (FA 2) s
-	apply2 args sumti1 sumti2 $ \nu num -> case (nu, num) of
-		(LO (NU p) _, LI (Number n)) ->
-			return $ MIDSTE $ replicate (round n) (jmi p [])
-		_ -> return $ SRERA $ show s
-
-clugau :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-clugau s _ = do
-	KOhA "ko" <- lookup (FA 1) s
-	case ((Time ["co'a"], KU) `elem` s, (Time ["co'u"], KU) `elem` s) of
-		(True, False) -> return COhACLUGAU
-		(False, True) -> return COhUCLUGAU
-		_ -> fail "bad"
-
-pilno :: ReadCommand
 pilno terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
 	binxo <- selpli args . linkargsToPOI =<< lookup (FA 2) terms
 	return $ if (Time ["ba"], KU) `elem` terms
 		then MIDSTE binxo
 		else MIDSTE $ binxo ++ [PILNOLOPENBI]
-
-uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
-uncurry3 f (x, y, z) = f x y z
-
-linkargsToPOI :: Sumti -> Sumti
-linkargsToPOI (LO (BE selbri (SFIhO modal sumti)) Nothing) =
-	LO selbri $ Just $ POI $ Bridi modal [(FA 1, sumti)]
-linkargsToPOI (LO (BE selbri sumti) Nothing) =
-	LO selbri $ Just $ POI $ Bridi selbri [(FA 2, sumti)]
-linkargsToPOI s = s
 
 selpli :: [Sumti] -> Sumti -> Maybe [Minde]
 selpli args (LO (Brivla "penbi") (Just (POI bridi))) = (: []) <$> penbi args bridi
@@ -176,8 +133,9 @@ penbi :: [Sumti] -> Text -> Maybe Minde
 penbi _ (Bridi (Brivla s) []) = pebyska s
 penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = applyLO args s pebyska
 penbi args (Bridi (ME s) []) = applyLO args s pebyska
-penbi args (Bridi (Brivla "cisni") [(FA 1, s)]) =
-	applyDouble args s $ return . PEBYCISNI
+penbi args (Bridi (Brivla "cisni") [(FA 1, s)]) = apply args s $ \smt -> case smt of
+	LI (Number d) -> return $ PEBYCISNI d
+	_ -> fail "bad"
 penbi _ p = return $ SRERA $ "penbi: no such penbi" ++ show p
 
 burska :: String -> Maybe Minde
@@ -189,6 +147,79 @@ burcu a (Bridi (ME s) []) = applyLO a s burska
 burcu a (Bridi (SE 2 (Brivla "skari")) [(FA 1, s)]) = applyLO a s burska
 burcu a (Bridi (Brivla "skari") [(FA 2, s)]) = applyLO a s burska
 burcu _ _ = return $ SRERA "burcu: no such burcu"
+
+applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
+applyLO args sumti cm = apply args sumti $ \s -> case s of
+	LO (Brivla d) Nothing -> cm d
+	_ -> fail $ "applyLO: bad sumti " ++ show s
+
+linkargsToPOI :: Sumti -> Sumti
+linkargsToPOI (LO (BE selbri (SFIhO modal sumti)) Nothing) =
+	LO selbri $ Just $ POI $ Bridi modal [(FA 1, sumti)]
+linkargsToPOI (LO (BE selbri sumti) Nothing) =
+	LO selbri $ Just $ POI $ Bridi selbri [(FA 2, sumti)]
+linkargsToPOI s = s
+
+cisni s args = do
+	sumti <- lookup (FA 1) s
+	KOhA "ko" <- lookup (FA 2) s
+	apply args sumti $ \smt -> case smt of
+		LI (Number n) -> return $ CISNI n
+		_ -> return $ SRERA $ show s
+
+viska s _ = do
+	KOhA "ko" <- lookup (FA 2) s
+	return VISKA
+
+rapli s args = do
+	sumti1 <- lookup (FA 1) s
+	sumti2 <- lookup (FA 2) s
+	apply2 args sumti1 sumti2 $ \nu num -> case (nu, num) of
+		(LO (NU p) _, LI (Number n)) ->
+			return $ MIDSTE $ replicate (round n) (jmi p [])
+		_ -> return $ SRERA $ show s
+
+xruti s _ = do
+	KOhA "ko" <- lookup (FA 1) s
+	return XRUTI
+
+morji s args = do
+	KOhA "ko" <- lookup (FA 1) s
+	GOI lerfu duhu <- lookup (FA 2) s
+	apply2 args lerfu duhu $ \l d -> case (l, d) of
+		(LerfuString cmene, LO (DUhU fasnu) _) ->
+			return $ MORJI cmene $ jmi fasnu
+		a -> return $ SRERA $ show a
+
+gasnu s a = do
+	KOhA "ko" <- lookup (FA 1) s
+	LerfuString cmene <- lookup (FA 2) s
+	return $ GASNU cmene a
+
+rejgau s args = do
+	KOhA "ko" <- lookup (FA 1) s
+	zfp <- lookup (BAI 1 "me'e") s
+	tai <- lookup (BAI 2 "tai") s
+	apply2 args zfp tai $ \z t -> case (z, t) of
+		(ZOI fp, LA (Right (Brivla "cakyrespa"))) -> return $ REJGAUSETAICAK fp
+		(ZOI fp, LA (Left "syvygyd")) -> return $ REJGAUSETAISVG fp
+		_ -> error $ show tai
+
+tcidu s args = do
+	KOhA "ko" <- lookup (FA 1) s
+	sumti <- lookup (FA 2) s
+	apply args sumti $ \smt -> case smt of
+		LA (Right (ME (ZOI fp))) -> return $ TCIDU fp
+		LAhE (ZOI fp) -> return $ TCIDU fp
+		_ -> return $ SRERA $ show s
+
+napilno s _ = do
+	KOhA "ko" <- lookup (FA 1) s
+	return NAPILNOLOPENBI
+
+naviska s _ = do
+	KOhA "ko" <- lookup (FA 2) s
+	return NAVISKA
 
 skaste :: [(String, (Int, Int, Int))]
 skaste = [
@@ -219,52 +250,3 @@ skaste = [
 	("sloska", (255, 215, 0)),	-- Gold
 	("xunblabi", (255, 192, 203))	-- Pink
  ]
-
-lahu :: [Sumti] -> [(Tag, Sumti)] -> Maybe Double
-lahu args s = do
-	l <- lookup (BAI 1 "la'u") s
-	applyDouble args l return
-
-type ReadCommand = [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-
-crakla :: ReadCommand
-crakla terms args = do
-	KOhA "ko" <- lookup (FA 1) terms
-	return $ maybe (CRAKLA 100)  CRAKLA $ lahu args terms
-
-rixykla :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
-rixykla s args = do
-	KOhA "ko" <- lookup (FA 1) s
-	return $ RIXYKLA $ fromMaybe 100 $ lahu args s
-
-carna :: ReadCommand
-carna terms args = do
-	KOhA "ko" <- lookup (FA 1) terms
-	farna <- case lookup (FA 3) terms of
-		Just (LO (Brivla zp) _) -> Just zp
-		Nothing -> Just "zunle"
-		_ -> Nothing
-	let	jganu = fromMaybe 90 $ lahu args terms
-	case farna of
-		"zunle" -> return $ ZUNLE jganu
-		"pritu" -> return $ PRITU jganu
-		_ -> fail "bad"
-
-apply2 :: Monad m => [Sumti] -> Sumti -> Sumti -> (Sumti -> Sumti -> m a) -> m a
-apply2 args s1 s2 cm = apply args s2 =<< apply args s1 (return . cm)
-
-apply :: Monad m => [Sumti] -> Sumti -> (Sumti -> m a) -> m a
-apply args (CEhU i) cm
-	| length args >= i = cm $ args !! (i - 1)
-	| otherwise = fail "apply: too few args"
-apply _ s cm = cm s
-
-applyDouble :: Monad m => [Sumti] -> Sumti -> (Double -> m a) -> m a
-applyDouble args sumti cm = apply args sumti $ \s -> case s of
-	LI (Number d) -> cm d
-	_ -> fail $ "applyDouble: bad sumti " ++ show s
-
-applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
-applyLO args sumti cm = apply args sumti $ \s -> case s of
-	LO (Brivla d) Nothing -> cm d
-	_ -> fail $ "applyLO: bad sumti " ++ show s
