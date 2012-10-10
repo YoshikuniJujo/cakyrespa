@@ -22,7 +22,7 @@ data Minde
 	| REJGAUSETAICAK FilePath		| TCIDU FilePath
 	| REJGAUSETAISVG FilePath
 	| COhO
-	| MIDSTE [Minde]
+	| MIDYSTE [Minde]
 	| SRERA String
 
 data Text

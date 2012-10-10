@@ -19,12 +19,12 @@ jmi t@(Bridi (Brivla brivla) terms) args = fromMaybe (SRERA $ show t) $
 	lookup brivla midste >>= \mid -> mid terms args
 jmi t@(Bridi (NA (Brivla brivla)) terms) args = fromMaybe (SRERA $ show t) $
 	lookup brivla narmidste >>= \mid -> mid terms args
-jmi (Prenex sumste bridi) _ = MIDSTE $ jmi bridi <$> mapM bagi sumste
+jmi (Prenex sumste bridi) _ = MIDYSTE $ jmi bridi <$> mapM bagi sumste
 	where
 	bagi (STense "ba" pavsu'i relsu'i) = bagi pavsu'i ++ bagi relsu'i
 	bagi sumti = [sumti]
 jmi (TagGI "ba" pavbri relbri) args =
-	MIDSTE $ [jmi pavbri args, jmi relbri args]
+	MIDYSTE $ [jmi pavbri args, jmi relbri args]
 jmi (Vocative "co'o") _ = COhO
 jmi l _ = SRERA $ show l
 
@@ -126,7 +126,7 @@ selpli args (LO (Brivla "penbi") (Just (POI bridi))) terms = do
 	p <- penbi args bridi
 	return $ if (Time ["ba"], KU) `elem` terms
 		then p
-		else MIDSTE [p, PILNOLOPENBI]
+		else MIDYSTE [p, PILNOLOPENBI]
 selpli args (LO (Brivla "burcu") (Just (POI bridi))) _ = burcu args bridi
 selpli _ (LO (Brivla "penbi") Nothing) _ = return PILNOLOPENBI
 selpli args (Relative s r) terms = apply args s $ \pb -> case pb of
@@ -185,7 +185,7 @@ rapli s args = do
 	sumti2 <- lookup (FA 2) s
 	apply2 args sumti1 sumti2 $ \nu num -> case (nu, num) of
 		(LO (NU p) _, LI (Number n)) ->
-			return $ MIDSTE $ replicate (round n) (jmi p [])
+			return $ MIDYSTE $ replicate (round n) (jmi p [])
 		_ -> return $ SRERA $ show s
 
 xruti s _ = do
