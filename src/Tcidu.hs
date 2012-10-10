@@ -1,4 +1,4 @@
-module Tcidu(readLojban) where
+module Tcidu(parse) where
 
 import Control.Arrow(first)
 import Data.Maybe(fromJust)
@@ -13,8 +13,8 @@ import Klesi(
 
 --------------------------------------------------------------------------------
 
-readLojban :: String -> Text
-readLojban = processSE . either (ParseError . show) (process 1) . P.parse
+parse :: String -> Text
+parse = processSE . either (ParseError . show) (process 1) . P.parse
 
 processSE :: Text -> Text
 processSE (Bridi (NA (SE n selbri)) ss) = processSE $
