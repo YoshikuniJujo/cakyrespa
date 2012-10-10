@@ -24,7 +24,7 @@ jmi (Prenex sumste bridi) _ = MIDYSTE $ jmi bridi <$> mapM bagi sumste
 	bagi (STense "ba" pavsu'i relsu'i) = bagi pavsu'i ++ bagi relsu'i
 	bagi sumti = [sumti]
 jmi (TagGI "ba" pavbri relbri) args =
-	MIDYSTE $ [jmi pavbri args, jmi relbri args]
+	MIDYSTE [jmi pavbri args, jmi relbri args]
 jmi (Vocative "co'o") _ = COhO
 jmi l _ = SRERA $ show l
 
@@ -122,12 +122,14 @@ pilno terms args = do
 
 selpli :: [(Tag, Sumti)] -> [Sumti] -> Sumti -> Maybe Minde
 selpli terms args (LO (Brivla "penbi") (Just (POI bridi))) = do
-	p <- penbi args bridi
+	peb <- penbi args bridi
 	return $ if (Time ["ba"], KU) `elem` terms
-		then p
-		else MIDYSTE [p, PILNOLOPENBI]
+		then peb
+		else MIDYSTE [peb, PILNOLOPENBI]
+selpli terms _ (LO (Brivla "penbi") Nothing)
+	| (Time ["ba"], KU) `elem` terms = return $ MIDYSTE []
+	| otherwise = return PILNOLOPENBI
 selpli _ args (LO (Brivla "burcu") (Just (POI bridi))) = burcu args bridi
-selpli _ _ (LO (Brivla "penbi") Nothing) = return PILNOLOPENBI
 selpli terms args (Relative s r) = apply args s $ \pb -> case pb of
 	LO (Brivla "penbi") _ -> selpli terms args (LO (Brivla "penbi") (Just r))
 	LO (Brivla "burcu") _ -> selpli terms args (LO (Brivla "burcu") (Just r))
