@@ -28,7 +28,7 @@ data Minde
 data Text
 	= Bridi Selbri [(Tag, Sumti)]
 	| Prenex [Sumti] Text
-	| TenseGI String Text Text
+	| TagGI String Text Text
 	| Vocative String
 	| Free [Free]
 	| UnknownText String

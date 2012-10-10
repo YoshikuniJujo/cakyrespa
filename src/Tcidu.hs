@@ -89,7 +89,7 @@ process' (TermsBridiTail ss _ _
 			(P.Time _ [((_, tense, _), _, _)] _ _)
 			((_, "gi", _), _, _))
 		t ((_, "gi", _), _, _) u _ _ _)) =
-	TenseGI tense
+	TagGI tense
 		(processSE $ process 1 $ TermsBridiTail ss undefined undefined t)
 		(processSE $ process (1 +
 			countc (TermsBridiTail ss undefined undefined t)) $
@@ -99,7 +99,7 @@ process' (GekSentence
 		(P.Time _ [((_, tense, _), _, _)] _ _)
 		((_, "gi", _), _, _))
 	t ((_, "gi", _), _, _) u _ _ _) =
-	TenseGI tense
+	TagGI tense
 		(processSE $ process 1 t)
 		(processSE $ process 1 u)
 process' (P.Selbri selbri) = Bridi (readSelbri selbri) []

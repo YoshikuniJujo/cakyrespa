@@ -1,7 +1,7 @@
 module Main where
 
 import Minde(minde)
-import Jimpe(command)
+import Jimpe(jimpe)
 import Tcidu(readLojban)
 
 import Graphics.UI.GLUT(mainLoop)
@@ -23,5 +23,5 @@ main = do
 	shape t "turtle"
 	shapesize t 3 3
 	notundo t
-	oninputtext f $ minde f t env . command . readLojban
+	oninputtext f $ minde f t env . jimpe . readLojban
 	mainLoop

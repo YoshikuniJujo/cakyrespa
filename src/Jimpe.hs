@@ -1,52 +1,51 @@
-module Jimpe (command, Minde(..), Sumti) where
+module Jimpe (jimpe) where
 
-import Klesi
+import Klesi(
+	Minde(..),
+	Text(..), Selbri(..), Tag(..), Sumti(..), Mex(..), RelativeClause(..))
 
 import Control.Applicative((<$>))
 import Data.Maybe(fromMaybe)
 
 --------------------------------------------------------------------------------
 
-command :: Text -> Minde
-command = flip cmd []
+jimpe :: Text -> Minde
+jimpe = flip jmi []
 
-cmd :: Text -> [Sumti] -> Minde
-cmd (Vocative "co'o") _ = COhO
-cmd (TenseGI "ba" b c) args = MIDSTE $ [cmd b args, cmd c args]
-cmd (Prenex ss b) _ = MIDSTE $ cmd b <$> mapM bagi ss
+jmi :: Text -> [Sumti] -> Minde
+jmi t@(Bridi (Brivla brivla) terms) sumti = fromMaybe (SRERA $ show t) $
+	lookup brivla midste >>= \mid -> mid terms sumti
+jmi t@(Bridi (NA (Brivla brivla)) terms) sumti = fromMaybe (SRERA $ show t) $
+	lookup brivla narmidste >>= \mid -> mid terms sumti
+jmi (Prenex sumste bridi) _ = MIDSTE $ jmi bridi <$> mapM bagi sumste
 	where
-	bagi (STense "ba" s t) = bagi s ++ bagi t
-	bagi s = [s]
-cmd b@(Bridi (Brivla brivla) s) args =
-	fromMaybe (SRERA $ show b) $ maybe Nothing (($ args) . ($ s))  $ lookup brivla pair
-cmd b@(Bridi (NA (Brivla brivla)) s) args =
-	fromMaybe (SRERA $ show b) $ maybe Nothing (($ args) . ($ s)) $ lookup brivla notPair
-cmd l _ = SRERA $ show l
+	bagi (STense "ba" pavsuhi relsuhi) = bagi pavsuhi ++ bagi relsuhi
+	bagi sumti = [sumti]
+jmi (TagGI "ba" pavbri relbri) sumti =
+	MIDSTE $ [jmi pavbri sumti, jmi relbri sumti]
+jmi (Vocative "co'o") _ = COhO
+jmi l _ = SRERA $ show l
 
-notPair :: [(String, [(Tag, Sumti)] -> [Sumti] -> Maybe Minde)]
-notPair = [
-	("viska", naViska),
-	("pilno", naPilno)
- ]
-
-pair :: [(String, [(Tag, Sumti)] -> [Sumti] -> Maybe Minde)]
-pair = [
-	("gasnu", gasnu),
-	("morji",  morji),
+midste, narmidste :: [(String, [(Tag, Sumti)] -> [Sumti] -> Maybe Minde)]
+midste = [
 	("klama", klama),
-	("galfi", galfi),
-	("tcidu", tcidu),
-	("rejgau", rejgau),
-	("viska", viska),
-	("cisni", cisni),
-	("xruti", xruti),
-	("rapli", rapli),
-	("carna", carna),
 	("crakla", crakla),
 	("rixykla", rixykla),
+	("carna", carna),
+	("clugau", clugau),
+	("galfi", galfi),
 	("pilno", pilno),
-	("clugau", clugau)
- ]
+	("cisni", cisni),
+	("viska", viska),
+	("rapli", rapli),
+	("xruti", xruti),
+	("morji", morji),
+	("gasnu", gasnu),
+	("rejgau", rejgau),
+	("tcidu", tcidu)]
+narmidste = [
+	("pilno", naPilno),
+	("viska", naViska)]
 
 gasnu :: ReadCommand
 gasnu s a = do
@@ -60,7 +59,7 @@ morji s args = do
 	GOI lerfu duhu <- lookup (FA 2) s
 	apply2 args lerfu duhu $ \l d -> case (l, d) of
 		(LerfuString cmene, LO (DUhU fasnu) _) ->
-			return $ MORJI cmene $ cmd fasnu
+			return $ MORJI cmene $ jmi fasnu
 		a -> return $ SRERA $ show a
 
 klama :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
@@ -135,7 +134,7 @@ rapli s args = do
 	sumti2 <- lookup (FA 2) s
 	apply2 args sumti1 sumti2 $ \nu num -> case (nu, num) of
 		(LO (NU p) _, LI (Number n)) ->
-			return $ MIDSTE $ replicate (round n) (cmd p [])
+			return $ MIDSTE $ replicate (round n) (jmi p [])
 		_ -> return $ SRERA $ show s
 
 clugau :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
