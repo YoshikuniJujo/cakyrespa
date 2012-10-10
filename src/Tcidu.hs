@@ -39,6 +39,8 @@ processCEhU n ((t, GOI s CEhUPre) : rest) =
 	(t, GOI s (CEhU n)) : processCEhU (n + 1) rest
 processCEhU n ((t, LA (Right (ME CEhUPre))) : rest) =
 	(t, LA $ Right $ ME $ CEhU n) : processCEhU (n + 1) rest
+processCEhU n ((t, Relative CEhUPre r) : rest) =
+	(t, Relative (CEhU n) r) : processCEhU (n + 1) rest
 processCEhU n (s : rest) = s : processCEhU n rest
 
 countc :: P.Text -> Int
@@ -57,6 +59,7 @@ countCEhU n ((_, GOI CEhUPre CEhUPre) : rest) = countCEhU (n + 2) rest
 countCEhU n ((_, GOI CEhUPre _) : rest) = countCEhU (n + 1) rest
 countCEhU n ((_, GOI _ CEhUPre) : rest) = countCEhU (n + 1) rest
 countCEhU n ((_, LA (Right (ME CEhUPre))) : rest) = countCEhU (n + 1) rest
+countCEhU n ((_, Relative CEhUPre _) : rest) = countCEhU (n + 1) rest
 countCEhU n (_ : rest) = countCEhU n rest
 
 flipTag :: Int -> Tag -> Tag
@@ -165,6 +168,8 @@ readSumti (P.ZOI _ "zoi" ws _ _) = ZOI $ processZOI $ concat ws
 readSumti (P.LAhE_NAhE (_, "tu'a", _) _ _ _ s _ _) = TUhA $ readSumti s
 readSumti (P.OuterQuantifier _ s (Just (P.GOI (_, "goi", _) _ t _ _))) =
 	GOI (readSumti s) (readSumti t)
+readSumti (P.OuterQuantifier _ s (Just r)) =
+	Relative (readSumti s) (readRelativeClauses r)
 readSumti (P.LerfuString ls _ _) = LerfuString $ concatMap (\(_, s, _) -> s) ls
 readSumti (GekSumti
 	(STagGik (P.Time _ [((_, pu, _), _, _)] _ _) ((_, "gi", _), _, _))

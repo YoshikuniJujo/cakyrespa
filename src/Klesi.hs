@@ -68,6 +68,7 @@ data Sumti
 	| TUhA Sumti
 	| LAhE Sumti
 	| GOI Sumti Sumti
+	| Relative Sumti RelativeClause
 	| STense String Sumti Sumti
 	| SFIhO Selbri Sumti
 	| UnknownSumti String

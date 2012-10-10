@@ -117,30 +117,35 @@ galfi terms args = do
 
 pilno terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
-	MIDSTE <$> (flip (selpli args) terms . linkargsToPOI
-		=<< lookup (FA 2) terms)
+	sp <- lookup (FA 2) terms
+	apply args sp $ \s ->
+		flip (selpli args) terms $ linkargsToPOI s
 
-selpli :: [Sumti] -> Sumti -> [(Tag, Sumti)] -> Maybe [Minde]
+selpli :: [Sumti] -> Sumti -> [(Tag, Sumti)] -> Maybe Minde
 selpli args (LO (Brivla "penbi") (Just (POI bridi))) terms = do
 	p <- penbi args bridi
 	return $ if (Time ["ba"], KU) `elem` terms
 		then p
-		else p ++ [PILNOLOPENBI]
-selpli args (LO (Brivla "burcu") (Just (POI bridi))) _ = (: []) <$> burcu args bridi
-selpli _ (LO (Brivla "penbi") Nothing) _ = return []
-selpli _ p _ = return [SRERA $ show p]
+		else MIDSTE [p, PILNOLOPENBI]
+selpli args (LO (Brivla "burcu") (Just (POI bridi))) _ = burcu args bridi
+selpli _ (LO (Brivla "penbi") Nothing) _ = return PILNOLOPENBI
+selpli args (Relative s r) terms = apply args s $ \pb -> case pb of
+	LO (Brivla "penbi") _ -> selpli args (LO (Brivla "penbi") (Just r)) terms
+	LO (Brivla "burcu") _ -> selpli args (LO (Brivla "burcu") (Just r)) terms
+	_ -> fail "selpli: bad selpli"
+selpli _ p _ = return $ SRERA $ "selpli: " ++ show p
 
 pebyska :: String -> Maybe Minde
 pebyska skari = uncurry3 PEBYSKA <$> lookup skari skaste
 
-penbi :: [Sumti] -> Text -> Maybe [Minde]
-penbi _ (Bridi (Brivla s) []) = (: []) <$> pebyska s
-penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = (: []) <$> applyLO args s pebyska
-penbi args (Bridi (ME s) []) = (: []) <$> applyLO args s pebyska
+penbi :: [Sumti] -> Text -> Maybe Minde
+penbi _ (Bridi (Brivla s) []) = pebyska s
+penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = applyLO args s pebyska
+penbi args (Bridi (ME s) []) = applyLO args s pebyska
 penbi args (Bridi (Brivla "cisni") [(FA 1, s)]) = apply args s $ \smt -> case smt of
-	LI (Number d) -> return $ [PEBYCISNI d]
+	LI (Number d) -> return $ PEBYCISNI d
 	_ -> fail "bad"
-penbi _ p = return [SRERA $ "penbi: no such penbi" ++ show p]
+penbi _ p = return $ SRERA $ "penbi: no such penbi" ++ show p
 
 burska :: String -> Maybe Minde
 burska skari = uncurry3 BURSKA <$> lookup skari skaste
