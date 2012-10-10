@@ -117,28 +117,30 @@ galfi terms args = do
 
 pilno terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
-	binxo <- selpli args . linkargsToPOI =<< lookup (FA 2) terms
-	return $ if (Time ["ba"], KU) `elem` terms
-		then MIDSTE binxo
-		else MIDSTE $ binxo ++ [PILNOLOPENBI]
+	MIDSTE <$> (flip (selpli args) terms . linkargsToPOI
+		=<< lookup (FA 2) terms)
 
-selpli :: [Sumti] -> Sumti -> Maybe [Minde]
-selpli args (LO (Brivla "penbi") (Just (POI bridi))) = (: []) <$> penbi args bridi
-selpli args (LO (Brivla "burcu") (Just (POI bridi))) = (: []) <$> burcu args bridi
-selpli _ (LO (Brivla "penbi") Nothing) = return [] -- return KUNTI
-selpli _ p = return [SRERA $ show p]
+selpli :: [Sumti] -> Sumti -> [(Tag, Sumti)] -> Maybe [Minde]
+selpli args (LO (Brivla "penbi") (Just (POI bridi))) terms = do
+	p <- penbi args bridi
+	return $ if (Time ["ba"], KU) `elem` terms
+		then p
+		else p ++ [PILNOLOPENBI]
+selpli args (LO (Brivla "burcu") (Just (POI bridi))) _ = (: []) <$> burcu args bridi
+selpli _ (LO (Brivla "penbi") Nothing) _ = return []
+selpli _ p _ = return [SRERA $ show p]
 
 pebyska :: String -> Maybe Minde
 pebyska skari = uncurry3 PEBYSKA <$> lookup skari skaste
 
-penbi :: [Sumti] -> Text -> Maybe Minde
-penbi _ (Bridi (Brivla s) []) = pebyska s
-penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = applyLO args s pebyska
-penbi args (Bridi (ME s) []) = applyLO args s pebyska
+penbi :: [Sumti] -> Text -> Maybe [Minde]
+penbi _ (Bridi (Brivla s) []) = (: []) <$> pebyska s
+penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = (: []) <$> applyLO args s pebyska
+penbi args (Bridi (ME s) []) = (: []) <$> applyLO args s pebyska
 penbi args (Bridi (Brivla "cisni") [(FA 1, s)]) = apply args s $ \smt -> case smt of
-	LI (Number d) -> return $ PEBYCISNI d
+	LI (Number d) -> return $ [PEBYCISNI d]
 	_ -> fail "bad"
-penbi _ p = return $ SRERA $ "penbi: no such penbi" ++ show p
+penbi _ p = return [SRERA $ "penbi: no such penbi" ++ show p]
 
 burska :: String -> Maybe Minde
 burska skari = uncurry3 BURSKA <$> lookup skari skaste
