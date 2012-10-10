@@ -130,11 +130,11 @@ selpli terms _ (LO (Brivla "penbi") Nothing)
 	| (Time ["ba"], KU) `elem` terms = return $ MIDYSTE []
 	| otherwise = return PILNOLOPENBI
 selpli _ args (LO (Brivla "burcu") (Just (POI bridi))) = burcu args bridi
-selpli terms args (Relative s r) = apply args s $ \pb -> case pb of
+selpli terms args (Relative sp r) = apply args sp $ \pb -> case pb of
 	LO (Brivla "penbi") _ -> selpli terms args (LO (Brivla "penbi") (Just r))
 	LO (Brivla "burcu") _ -> selpli terms args (LO (Brivla "burcu") (Just r))
 	_ -> fail "selpli: bad selpli"
-selpli _ _ p = return $ SRERA $ "selpli: unknown selpli " ++ show p
+selpli _ _ sp = return $ SRERA $ "selpli: unknown selpli " ++ show sp
 
 penbi :: [Sumti] -> Text -> Maybe Minde
 penbi _ (Bridi (Brivla skari) []) = pebyska skari
@@ -144,90 +144,94 @@ penbi args (Bridi (Brivla "cisni") [(FA 1, cisnysu'i)]) =
 	apply args cisnysu'i $ \cs -> case cs of
 		LI (Number cisnyna'u) -> return $ PEBYCISNI cisnyna'u
 		_ -> fail "bad"
-penbi _ text = return $ SRERA $ "penbi: no such penbi" ++ show text
+penbi _ relative = return $ SRERA $ "penbi: no such penbi" ++ show relative
 
 pebyska :: String -> Maybe Minde
 pebyska skari = uncurry3 PEBYSKA <$> lookup skari skaste
 
 burcu :: [Sumti] -> Text -> Maybe Minde
 burcu _ (Bridi (Brivla skari) []) = burska skari
-burcu a (Bridi (ME s) []) = applyLO a s burska
-burcu a (Bridi (SE 2 (Brivla "skari")) [(FA 1, s)]) = applyLO a s burska
-burcu a (Bridi (Brivla "skari") [(FA 2, s)]) = applyLO a s burska
-burcu _ _ = return $ SRERA "burcu: no such burcu"
+burcu args (Bridi (ME skari) []) = applyLO args skari burska
+burcu args (Bridi (SE 2 (Brivla "skari")) [(FA 1, skari)]) =
+	applyLO args skari burska
+burcu args (Bridi (Brivla "skari") [(FA 2, skari)]) =
+	applyLO args skari burska
+burcu _ relative = return $ SRERA $ "burcu: no such burcu" ++ show relative
 
 burska :: String -> Maybe Minde
 burska skari = uncurry3 BURSKA <$> lookup skari skaste
 
 applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
-applyLO args sumti cmd = apply args sumti $ \s -> case s of
-	LO (Brivla d) Nothing -> cmd d
-	_ -> fail $ "applyLO: bad sumti " ++ show s
+applyLO args sumti cmd = apply args sumti $ \su'i -> case su'i of
+	LO (Brivla lerfu) Nothing -> cmd lerfu
+	_ -> fail $ "applyLO: bad sumti " ++ show su'i
 
 be2poi :: Sumti -> Sumti
 be2poi (LO (BE selbri (SFIhO modal sumti)) Nothing) =
 	LO selbri $ Just $ POI $ Bridi modal [(FA 1, sumti)]
 be2poi (LO (BE selbri sumti) Nothing) =
 	LO selbri $ Just $ POI $ Bridi selbri [(FA 2, sumti)]
-be2poi s = s
+be2poi sumti = sumti
 
-cisni s args = do
-	sumti <- lookup (FA 1) s
-	KOhA "ko" <- lookup (FA 2) s
-	apply args sumti $ \smt -> case smt of
+cisni terms args = do
+	KOhA "ko" <- lookup (FA 2) terms
+	csn <- lookup (FA 1) terms
+	apply args csn $ \c -> case c of
 		LI (Number n) -> return $ CISNI n
-		_ -> return $ SRERA $ show s
+		_ -> return $ SRERA $ "cisni: " ++ show terms
 
-viska s _ = do
-	KOhA "ko" <- lookup (FA 2) s
+viska terms _ = do
+	KOhA "ko" <- lookup (FA 2) terms
 	return VISKA
 
-rapli s args = do
-	sumti1 <- lookup (FA 1) s
-	sumti2 <- lookup (FA 2) s
-	apply2 args sumti1 sumti2 $ \nu num -> case (nu, num) of
-		(LO (NU p) _, LI (Number n)) ->
-			return $ MIDYSTE $ replicate (round n) (jmi p [])
-		_ -> return $ SRERA $ show s
+rapli terms args = do
+	fasnu <- lookup (FA 1) terms
+	namcu <- lookup (FA 2) terms
+	apply2 args fasnu namcu $ \fau nac -> case (fau, nac) of
+		(LO (NU f) _, LI (Number n)) ->
+			return $ MIDYSTE $ replicate (round n) (jmi f [])
+		_ -> return $ SRERA $ show terms
 
-xruti s _ = do
-	KOhA "ko" <- lookup (FA 1) s
+xruti terms _ = do
+	KOhA "ko" <- lookup (FA 1) terms
 	return XRUTI
 
-morji s args = do
-	KOhA "ko" <- lookup (FA 1) s
-	GOI lerfu duhu <- lookup (FA 2) s
-	apply2 args lerfu duhu $ \l d -> case (l, d) of
+morji terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	GOI lerfu duhu <- lookup (FA 2) terms
+	apply2 args lerfu duhu $ \ler d -> case (ler, d) of
 		(LerfuString cmene, LO (DUhU fasnu) _) ->
 			return $ MORJI cmene $ jmi fasnu
-		a -> return $ SRERA $ show a
+		_ -> return $ SRERA $ "morji: " ++ show terms
 
-gasnu s a = do
-	KOhA "ko" <- lookup (FA 1) s
-	LerfuString cmene <- lookup (FA 2) s
-	return $ GASNU cmene a
+gasnu terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	LerfuString cmene <- lookup (FA 2) terms
+	return $ GASNU cmene args
 
-rejgau s args = do
-	KOhA "ko" <- lookup (FA 1) s
-	zfp <- lookup (BAI 1 "me'e") s
-	tai <- lookup (BAI 2 "tai") s
-	apply2 args zfp tai $ \z t -> case (z, t) of
-		(ZOI fp, LA (Right (Brivla "cakyrespa"))) -> return $ REJGAUSETAICAK fp
-		(ZOI fp, LA (Left "syvygyd")) -> return $ REJGAUSETAISVG fp
-		_ -> error $ show tai
+rejgau terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	cmene <- lookup (BAI 1 "me'e") terms
+	setai <- lookup (BAI 2 "tai") terms
+	apply2 args cmene setai $ \cme st -> case (cme, st) of
+		(ZOI fp, LA (Right (Brivla "cakyrespa"))) ->
+			return $ REJGAUSETAICAK fp
+		(ZOI fp, LA (Left "syvygyd")) ->
+			return $ REJGAUSETAISVG fp
+		_ -> return $ SRERA $ "rejgau: " ++ show setai
 
-tcidu s args = do
-	KOhA "ko" <- lookup (FA 1) s
-	sumti <- lookup (FA 2) s
+tcidu terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	sumti <- lookup (FA 2) terms
 	apply args sumti $ \smt -> case smt of
 		LA (Right (ME (ZOI fp))) -> return $ TCIDU fp
 		LAhE (ZOI fp) -> return $ TCIDU fp
-		_ -> return $ SRERA $ show s
+		_ -> return $ SRERA $ "tcidu: " ++ show terms
 
-napilno s _ = do
-	KOhA "ko" <- lookup (FA 1) s
+napilno terms _ = do
+	KOhA "ko" <- lookup (FA 1) terms
 	return NAPILNOLOPENBI
 
-naviska s _ = do
-	KOhA "ko" <- lookup (FA 2) s
+naviska terms _ = do
+	KOhA "ko" <- lookup (FA 2) terms
 	return NAVISKA
