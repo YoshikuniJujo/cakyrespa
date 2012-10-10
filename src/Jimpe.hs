@@ -14,16 +14,16 @@ jimpe :: Text -> Minde
 jimpe = flip jmi []
 
 jmi :: Text -> [Sumti] -> Minde
-jmi t@(Bridi (Brivla brivla) terms) sumti = fromMaybe (SRERA $ show t) $
-	lookup brivla midste >>= \mid -> mid terms sumti
-jmi t@(Bridi (NA (Brivla brivla)) terms) sumti = fromMaybe (SRERA $ show t) $
-	lookup brivla narmidste >>= \mid -> mid terms sumti
+jmi t@(Bridi (Brivla brivla) terms) args = fromMaybe (SRERA $ show t) $
+	lookup brivla midste >>= \mid -> mid terms args
+jmi t@(Bridi (NA (Brivla brivla)) terms) args = fromMaybe (SRERA $ show t) $
+	lookup brivla narmidste >>= \mid -> mid terms args
 jmi (Prenex sumste bridi) _ = MIDSTE $ jmi bridi <$> mapM bagi sumste
 	where
 	bagi (STense "ba" pavsuhi relsuhi) = bagi pavsuhi ++ bagi relsuhi
 	bagi sumti = [sumti]
-jmi (TagGI "ba" pavbri relbri) sumti =
-	MIDSTE $ [jmi pavbri sumti, jmi relbri sumti]
+jmi (TagGI "ba" pavbri relbri) args =
+	MIDSTE $ [jmi pavbri args, jmi relbri args]
 jmi (Vocative "co'o") _ = COhO
 jmi l _ = SRERA $ show l
 
@@ -51,13 +51,13 @@ narmidste = [
 	("viska", naviska)]
 
 apply :: Monad m => [Sumti] -> Sumti -> (Sumti -> m a) -> m a
-apply args (CEhU i) cm
-	| length args >= i = cm $ args !! (i - 1)
+apply args (CEhU i) cmd
+	| length args >= i = cmd $ args !! (i - 1)
 	| otherwise = fail "apply: too few args"
-apply _ s cm = cm s
+apply _ sumti cmd = cmd sumti
 
 apply2 :: Monad m => [Sumti] -> Sumti -> Sumti -> (Sumti -> Sumti -> m a) -> m a
-apply2 args s1 s2 cm = apply args s2 =<< apply args s1 (return . cm)
+apply2 args s1 s2 cmd = apply args s2 =<< apply args s1 (return . cmd)
 
 klama, crakla, rixykla, carna, clugau, galfi, pilno, cisni, viska, rapli, xruti,
 	morji, gasnu, rejgau, tcidu, napilno, naviska :: Midytcidu
@@ -71,37 +71,36 @@ klama terms args = do
 
 crakla terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
-	return $ maybe (CRAKLA 100)  CRAKLA $ lahu args terms
+	return . CRAKLA . fromMaybe 100 $ lahu terms args
 
-rixykla s args = do
-	KOhA "ko" <- lookup (FA 1) s
-	return $ RIXYKLA $ fromMaybe 100 $ lahu args s
+rixykla terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	return . RIXYKLA . fromMaybe 100 $ lahu terms args
 
 carna terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
 	farna <- case lookup (FA 3) terms of
-		Just (LO (Brivla zp) _) -> Just zp
-		Nothing -> Just "zunle"
-		_ -> Nothing
-	let	jganu = fromMaybe 90 $ lahu args terms
+		Just (LO (Brivla zp) _) -> return zp
+		Nothing -> return "zunle"
+		_ -> fail "carna: bad direction"
 	case farna of
-		"zunle" -> return $ ZUNLE jganu
-		"pritu" -> return $ PRITU jganu
-		_ -> fail "bad"
+		"zunle" -> return $ ZUNLE $ fromMaybe 90 $ lahu terms args
+		"pritu" -> return $ PRITU $ fromMaybe 90 $ lahu terms args
+		_ -> fail "carna: bad direction"
 
-lahu :: [Sumti] -> [(Tag, Sumti)] -> Maybe Double
-lahu args s = do
-	l <- lookup (BAI 1 "la'u") s
-	apply args l $ \smt -> case smt of
+lahu :: [(Tag, Sumti)] -> [Sumti] -> Maybe Double
+lahu terms args = do
+	klani <- lookup (BAI 1 "la'u") terms
+	apply args klani $ \k -> case k of
 		LI (Number d) -> return d
-		_ -> fail "bad"
+		_ -> fail "lahu: not number"
 
 clugau s _ = do
 	KOhA "ko" <- lookup (FA 1) s
 	case ((Time ["co'a"], KU) `elem` s, (Time ["co'u"], KU) `elem` s) of
 		(True, False) -> return COhACLUGAU
 		(False, True) -> return COhUCLUGAU
-		_ -> fail "bad"
+		_ -> fail "clugau: bad tense"
 
 galfi s args = do
 	TUhA (KOhA "ko") <- lookup (FA 1) s
