@@ -137,9 +137,9 @@ selpli terms args (Relative s r) = apply args s $ \pb -> case pb of
 selpli _ _ p = return $ SRERA $ "selpli: unknown selpli " ++ show p
 
 penbi :: [Sumti] -> Text -> Maybe Minde
-penbi _ (Bridi (Brivla s) []) = pebyska s
-penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = applyLO args s pebyska
-penbi args (Bridi (ME s) []) = applyLO args s pebyska
+penbi _ (Bridi (Brivla skari) []) = pebyska skari
+penbi args (Bridi (Brivla "penbi") [(FA 2, skari)]) = applyLO args skari pebyska
+penbi args (Bridi (ME skari) []) = applyLO args skari pebyska
 penbi args (Bridi (Brivla "cisni") [(FA 1, cisnysu'i)]) =
 	apply args cisnysu'i $ \cs -> case cs of
 		LI (Number cisnyna'u) -> return $ PEBYCISNI cisnyna'u
@@ -160,8 +160,8 @@ burska :: String -> Maybe Minde
 burska skari = uncurry3 BURSKA <$> lookup skari skaste
 
 applyLO :: Monad m => [Sumti] -> Sumti -> (String -> m a) -> m a
-applyLO args sumti cm = apply args sumti $ \s -> case s of
-	LO (Brivla d) Nothing -> cm d
+applyLO args sumti cmd = apply args sumti $ \s -> case s of
+	LO (Brivla d) Nothing -> cmd d
 	_ -> fail $ "applyLO: bad sumti " ++ show s
 
 be2poi :: Sumti -> Sumti
