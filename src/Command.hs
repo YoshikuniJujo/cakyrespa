@@ -7,10 +7,10 @@ import Data.Maybe(fromMaybe)
 
 --------------------------------------------------------------------------------
 
-command :: Lojban -> Minde
+command :: Text -> Minde
 command = flip cmd []
 
-cmd :: Lojban -> [Sumti] -> Minde
+cmd :: Text -> [Sumti] -> Minde
 cmd (Vocative "co'o") _ = COhO
 cmd (TenseGI "ba" b c) args = MIDSTE $ [cmd b args, cmd c args]
 cmd (Prenex ss b) _ = MIDSTE $ cmd b <$> mapM bagi ss
@@ -94,8 +94,8 @@ tcidu s args = do
 rejgau :: [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
 rejgau s args = do
 	KOhA "ko" <- lookup (FA 1) s
-	zfp <- lookup (BAI Nothing "me'e") s
-	tai <- lookup (BAI (Just "se") "tai") s
+	zfp <- lookup (BAI 1 "me'e") s
+	tai <- lookup (BAI 2 "tai") s
 	apply2 args zfp tai $ \z t -> case (z, t) of
 		(ZOI fp, LA (Right (Brivla "cakyrespa"))) -> return $ REJGAUSETAICAK fp
 		(ZOI fp, LA (Left "syvygyd")) -> return $ REJGAUSETAISVG fp
@@ -158,9 +158,9 @@ uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
 uncurry3 f (x, y, z) = f x y z
 
 linkargsToPOI :: Sumti -> Sumti
-linkargsToPOI (LO (Linkargs selbri (SFIhO modal sumti)) Nothing) =
+linkargsToPOI (LO (BE selbri (SFIhO modal sumti)) Nothing) =
 	LO selbri $ Just $ POI $ Bridi modal [(FA 1, sumti)]
-linkargsToPOI (LO (Linkargs selbri sumti) Nothing) =
+linkargsToPOI (LO (BE selbri sumti) Nothing) =
 	LO selbri $ Just $ POI $ Bridi selbri [(FA 2, sumti)]
 linkargsToPOI s = s
 
@@ -173,7 +173,7 @@ selpli _ p = return [SRERA $ show p]
 pebyska :: String -> Maybe Minde
 pebyska skari = uncurry3 PEBYSKA <$> lookup skari skaste
 
-penbi :: [Sumti] -> Lojban -> Maybe Minde
+penbi :: [Sumti] -> Text -> Maybe Minde
 penbi _ (Bridi (Brivla s) []) = pebyska s
 penbi args (Bridi (Brivla "penbi") [(FA 2, s)]) = applyLO args s pebyska
 penbi args (Bridi (ME s) []) = applyLO args s pebyska
@@ -184,7 +184,7 @@ penbi _ p = return $ SRERA $ "penbi: no such penbi" ++ show p
 burska :: String -> Maybe Minde
 burska skari = uncurry3 BURSKA <$> lookup skari skaste
 
-burcu :: [Sumti] -> Lojban -> Maybe Minde
+burcu :: [Sumti] -> Text -> Maybe Minde
 burcu _ (Bridi (Brivla skari) []) = burska skari
 burcu a (Bridi (ME s) []) = applyLO a s burska
 burcu a (Bridi (SE 2 (Brivla "skari")) [(FA 1, s)]) = applyLO a s burska
@@ -223,7 +223,7 @@ skaste = [
 
 lahu :: [Sumti] -> [(Tag, Sumti)] -> Maybe Double
 lahu args s = do
-	l <- lookup (BAI Nothing "la'u") s
+	l <- lookup (BAI 1 "la'u") s
 	applyDouble args l return
 
 type ReadCommand = [(Tag, Sumti)] -> [Sumti] -> Maybe Minde

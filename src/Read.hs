@@ -2,8 +2,8 @@ module Read (readLojban) where
 
 import Klesi
 
-import Language.Lojban.Parser hiding (
-	Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
+import Language.Lojban.Parser hiding (BE,
+	Text, Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
 	Time, KU, Linkargs, FIhO, NU, NA, LA, ZOI, ME, JOhI, SE, GOI,
 	LerfuString, Prenex)
 import qualified Language.Lojban.Parser as P
@@ -11,10 +11,10 @@ import Data.Maybe
 import Data.Char
 import Control.Arrow
 
-readLojban :: String -> Lojban
+readLojban :: String -> Text
 readLojban = processSE . either (ParseError . show) (process 1) . parse
 
-processSE :: Lojban -> Lojban
+processSE :: Text -> Text
 processSE (Bridi (NA (SE n selbri)) ss) = processSE $
 	Bridi (NA selbri) $ map (first $ flipTag n) ss
 processSE (Bridi (SE n selbri) ss) = processSE $
@@ -26,10 +26,10 @@ processCEhU _ [] = []
 processCEhU n ((t, CEhUPre) : rest) = (t, CEhU n) : processCEhU (n + 1) rest
 processCEhU n ((t, LO s (Just (POI (Bridi (ME CEhUPre) ss)))) : rest) =
 	(t, LO s $ Just $ POI $ Bridi (ME $ CEhU n) ss) : processCEhU (n + 1) rest
-processCEhU n ((t, LO (Linkargs selbri CEhUPre) Nothing) : rest) =
-	(t, LO (Linkargs selbri $ CEhU n) Nothing) : processCEhU (n + 1) rest
-processCEhU n ((t, LO (Linkargs selbri (SFIhO modal CEhUPre)) Nothing) : rest) =
-	(t, LO (Linkargs selbri $ SFIhO modal $ CEhU n) Nothing) :
+processCEhU n ((t, LO (BE selbri CEhUPre) Nothing) : rest) =
+	(t, LO (BE selbri $ CEhU n) Nothing) : processCEhU (n + 1) rest
+processCEhU n ((t, LO (BE selbri (SFIhO modal CEhUPre)) Nothing) : rest) =
+	(t, LO (BE selbri $ SFIhO modal $ CEhU n) Nothing) :
 		processCEhU (n + 1) rest
 processCEhU n ((t, GOI CEhUPre CEhUPre) : rest) =
 	(t, GOI (CEhU n) (CEhU $ n + 1)) : processCEhU (n + 2) rest
@@ -41,7 +41,7 @@ processCEhU n ((t, LA (Right (ME CEhUPre))) : rest) =
 	(t, LA $ Right $ ME $ CEhU n) : processCEhU (n + 1) rest
 processCEhU n (s : rest) = s : processCEhU n rest
 
-countc :: Text -> Int
+countc :: P.Text -> Int
 countc = countCEhU 0 . (\(Bridi _ s) -> s) . process'
 
 countCEhU :: Int -> [(Tag, Sumti)] -> Int
@@ -49,9 +49,9 @@ countCEhU n [] = n
 countCEhU n ((_, CEhUPre) : rest) = countCEhU (n + 1) rest
 countCEhU n ((_, LO _ (Just (POI (Bridi (ME CEhUPre) _)))) : rest) =
 	countCEhU (n + 1) rest
-countCEhU n ((_, LO (Linkargs _ CEhUPre) Nothing) : rest) =
+countCEhU n ((_, LO (BE _ CEhUPre) Nothing) : rest) =
 	countCEhU (n + 1) rest
-countCEhU n ((_, LO (Linkargs _ (SFIhO _ CEhUPre)) Nothing) : rest) =
+countCEhU n ((_, LO (BE _ (SFIhO _ CEhUPre)) Nothing) : rest) =
 	countCEhU (n + 1) rest
 countCEhU n ((_, GOI CEhUPre CEhUPre) : rest) = countCEhU (n + 2) rest
 countCEhU n ((_, GOI CEhUPre _) : rest) = countCEhU (n + 1) rest
@@ -65,12 +65,12 @@ flipTag n (FA f)
 	| f == n = FA 1
 flipTag _ t = t
 
-process :: Int -> Text -> Lojban
+process :: Int -> P.Text -> Text
 process n s = case process' s of
 	Bridi selbri terms -> Bridi selbri (processCEhU n terms)
 	r -> r
 
-process' :: Text -> Lojban
+process' :: P.Text -> Text
 process' (TopText _ _ [VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
 	Vocative v
 process' (IText_1 _ _ _ [VocativeSumti [(_, v, _)] _ _] Nothing) = Vocative v
@@ -105,7 +105,7 @@ process' (GekSentence
 process' (P.Selbri selbri) = Bridi (readSelbri selbri) []
 process' (P.SelbriTailTerms selbri ts _ _) =
 	Bridi (readSelbri selbri) $ processTagSumti [] ts
-process' t = NotImplemented $ "process: " ++ show t
+process' t = UnknownText $ "process: " ++ show t
 
 processTagSumti :: [P.Sumti] -> [P.Sumti] -> [(Tag, Sumti)]
 processTagSumti s t = let
@@ -125,12 +125,12 @@ readTagSumti n e r (s : rest) =
 
 readTag :: P.Tag -> (Maybe Int, Tag)
 readTag (P.FA (_, f, _) _) = let n = fromJust $ lookup f faList in (Just n, FA n)
-readTag (P.BAI _ Nothing (_, b, _) _ _) = (Nothing, BAI Nothing b)
-readTag (P.BAI _ (Just (_, s, _)) (_, b, _) _ _) = (Nothing, BAI (Just s) b)
-readTag (P.Time _ [((_, t, _), Nothing, Nothing)] _ _) =
-	(Nothing, Time [t])
+readTag (P.BAI _ Nothing (_, b, _) _ _) = (Nothing, BAI 1 b)
+readTag (P.BAI _ (Just (_, s, _)) (_, b, _) _ _) =
+	(Nothing, BAI (fromJust $ lookup s seList) b)
+readTag (P.Time _ [((_, t, _), Nothing, Nothing)] _ _) = (Nothing, Time [t])
 readTag (P.Time _ _ _ ts) = (Nothing, Time $ map readTime ts)
-readTag t = (Nothing, NotImplementedTag $ "readTag: " ++ show t)
+readTag t = (Nothing, UnknownTag $ "readTag: " ++ show t)
 
 readTime ::  IntervalProperty -> String
 readTime (ZAhO (_, z, _) _) = z
@@ -150,7 +150,7 @@ readSumti (P.KOhA (_, "ce'u", _) [XINumber (_, "xi", _) _ [([], pa, [])] _]) =
 	CEhU $ round $ paToInt [pa]
 readSumti (P.KOhA (_, "ce'u", _) []) = CEhUPre
 readSumti s@(P.KOhA (_, "ce'u", _) f) =
-	NotImplementedSumti $ show s ++ " " ++ show f
+	UnknownSumti $ show s ++ " " ++ show f
 readSumti (P.KOhA (_, k, _) _) = KOhA k
 readSumti (LALE (_, "lo", _) _ st _ _) = LO selbri relative
 	where (selbri, relative) = readSumtiTail st
@@ -170,7 +170,7 @@ readSumti (GekSumti
 	(STagGik (P.Time _ [((_, pu, _), _, _)] _ _) ((_, "gi", _), _, _))
 	s ((_, "gi", _), _, _) t) = STense pu (readSumti s) (readSumti t)
 readSumti (P.LAhE_NAhE (_, "la'e", _) _ _ _ s _ _) = LAhE $ readSumti s
-readSumti s = NotImplementedSumti $ "readSumti: " ++ show s
+readSumti s = UnknownSumti $ "readSumti: " ++ show s
 
 processZOI :: String -> String
 processZOI ('.' : str) = let ('.' : s) = reverse str in
@@ -181,7 +181,7 @@ processZOI str = let ('.' : s) = reverse str in
 readMex :: Operand -> Mex
 readMex (P.Number n _ _) = readNumber n
 readMex (P.JOhI (_, "jo'i", _) _ ns _ _) = JOhI $ map readMex ns
-readMex o = NotImplementedMex $ "readMex: " ++ show o
+readMex o = UnknownMex $ "readMex: " ++ show o
 
 readNumber :: [Clause] -> Mex
 readNumber = Number . paToInt . map (\(_, p, _) -> p)
@@ -228,23 +228,23 @@ readSumtiTail (SelbriRelativeClauses s Nothing) =
 	(readSelbri s, Nothing)
 readSumtiTail (SelbriRelativeClauses s (Just r)) =
 	(readSelbri s, Just $ readRelativeClauses r)
-readSumtiTail st = (NotImplementedSelbri $ "readSumtiTail: " ++ show st, Nothing)
+readSumtiTail st = (UnknownSelbri $ "readSumtiTail: " ++ show st, Nothing)
 
 readRelativeClauses :: P.RelativeClause -> RelativeClause
 readRelativeClauses (NOI (_, "poi", _) _ bridi _ _) =
 	POI $ process 1 bridi
-readRelativeClauses r = Debug $  show r
+readRelativeClauses r = UnknownRelativeClause $  show r
 
 readSelbri :: P.Selbri -> Selbri
 readSelbri (P.Brivla (_, b, _) _) = Brivla $ map toLower b
-readSelbri (P.Linkargs selbri (BE (_, "be", _) _ sumti _ _ _)) =
-	Linkargs (readSelbri selbri) (readSumti sumti)
+readSelbri (P.Linkargs selbri (P.BE (_, "be", _) _ sumti _ _ _)) =
+	BE (readSelbri selbri) (readSumti sumti)
 readSelbri (P.NU (_, "nu", _) _ _ _ bridi _ _) = NU $ process 1 bridi
 readSelbri (P.NU (_, "du'u", _) _ _ _ bridi _ _) = DUhU $ process 1 bridi
 readSelbri (P.NA (_, "na", _) _ s) = NA $ readSelbri s
 readSelbri (P.ME (_, "me", _) _ s _ _ _ _) = ME $ readSumti s
 readSelbri (P.SE (_, se, _) _ s) = SE (fromJust $ lookup se seList) $ readSelbri s
-readSelbri s = NotImplementedSelbri $ "readSelbri: " ++ show s
+readSelbri s = UnknownSelbri $ "readSelbri: " ++ show s
 
 seList :: [(String, Int)]
 seList = [
