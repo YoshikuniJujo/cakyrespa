@@ -10,6 +10,7 @@ import qualified Language.Lojban.Parser as P(
 	Tag(..), Sumti(..), SumtiTail(..), RelativeClause(..), Operand(..))
 import Klesi(
 	Text(..), Selbri(..), Tag(..), Sumti(..), Mex(..), RelativeClause(..))
+import Liste
 
 --------------------------------------------------------------------------------
 
@@ -141,15 +142,6 @@ readTime :: P.IntervalProperty -> String
 readTime (P.ZAhO (_, z, _) _) = z
 readTime ip = "readTime: " ++ show ip
 
-faList :: [(String, Int)]
-faList = [
-	("fa", 1),
-	("fe", 2),
-	("fi", 3),
-	("fo", 4),
-	("fu", 5)
- ]
-
 readSumti :: P.Sumti -> Sumti
 readSumti (P.KOhA (_, "ce'u", _) [P.XINumber (_, "xi", _) _ [([], pa, [])] _]) =
 	CEhU $ round $ paToInt [pa]
@@ -216,20 +208,6 @@ lookup' x ((xs, y) : ys)
 	| x `elem` xs = Just y
 	| otherwise = lookup' x ys
 
-paList :: [([String], Double)]
-paList = [
-	(["no", "0"], 0),
-	(["pa", "1"], 1),
-	(["re", "2"], 2),
-	(["ci", "3"], 3),
-	(["vo", "4"], 4),
-	(["mu", "5"], 5),
-	(["xa", "6"], 6),
-	(["ze", "7"], 7),
-	(["bi", "8"], 8),
-	(["so", "9"], 9)
- ]
-
 readSumtiTail :: P.SumtiTail -> (Selbri, Maybe RelativeClause)
 readSumtiTail (P.SelbriRelativeClauses s Nothing) =
 	(readSelbri s, Nothing)
@@ -252,14 +230,6 @@ readSelbri (P.NA (_, "na", _) _ s) = NA $ readSelbri s
 readSelbri (P.ME (_, "me", _) _ s _ _ _ _) = ME $ readSumti s
 readSelbri (P.SE (_, se, _) _ s) = SE (fromJust $ lookup se seList) $ readSelbri s
 readSelbri s = UnknownSelbri $ "readSelbri: " ++ show s
-
-seList :: [(String, Int)]
-seList = [
-	("se", 2),
-	("te", 3),
-	("ve", 4),
-	("xe", 5)
- ]
 	
 next :: Int -> [Int] -> Int
 next n e

@@ -1,4 +1,4 @@
-module Liste (skaste) where
+module Liste (skaste, faList, seList, paList) where
 
 skaste :: [(String, (Int, Int, Int))]
 skaste = [
@@ -28,4 +28,35 @@ skaste = [
 	("narju", (255, 165, 0)),	-- Orange
 	("sloska", (255, 215, 0)),	-- Gold
 	("xunblabi", (255, 192, 203))	-- Pink
+ ]
+
+faList :: [(String, Int)]
+faList = [
+	("fa", 1),
+	("fe", 2),
+	("fi", 3),
+	("fo", 4),
+	("fu", 5)
+ ]
+
+paList :: [([String], Double)]
+paList = [
+	(["no", "0"], 0),
+	(["pa", "1"], 1),
+	(["re", "2"], 2),
+	(["ci", "3"], 3),
+	(["vo", "4"], 4),
+	(["mu", "5"], 5),
+	(["xa", "6"], 6),
+	(["ze", "7"], 7),
+	(["bi", "8"], 8),
+	(["so", "9"], 9)
+ ]
+
+seList :: [(String, Int)]
+seList = [
+	("se", 2),
+	("te", 3),
+	("ve", 4),
+	("xe", 5)
  ]
