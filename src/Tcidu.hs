@@ -1,18 +1,20 @@
-module Tcidu (readLojban) where
+module Tcidu(readLojban) where
 
-import Klesi
+import Control.Arrow(first)
+import Data.Maybe(fromJust)
+import Data.Char(isSpace, toLower)
+import qualified Language.Lojban.Parser as P(
+	parse, Text, Clause,
+	Sentence(..), Gek(..), Free(..), IntervalProperty(..),
+	Selbri(..), Linkargs(..),
+	Tag(..), Sumti(..), SumtiTail(..), RelativeClause(..), Operand(..))
+import Klesi(
+	Text(..), Selbri(..), Tag(..), Sumti(..), Mex(..), RelativeClause(..))
 
-import Language.Lojban.Parser hiding (BE,
-	Text, Tag, Sumti, Selbri, KOhA, FA, Brivla, BAI, Number, LI, RelativeClause,
-	Time, KU, Linkargs, FIhO, NU, NA, LA, ZOI, ME, JOhI, SE, GOI,
-	LerfuString, Prenex)
-import qualified Language.Lojban.Parser as P
-import Data.Maybe
-import Data.Char
-import Control.Arrow
+--------------------------------------------------------------------------------
 
 readLojban :: String -> Text
-readLojban = processSE . either (ParseError . show) (process 1) . parse
+readLojban = processSE . either (ParseError . show) (process 1) . P.parse
 
 processSE :: Text -> Text
 processSE (Bridi (NA (SE n selbri)) ss) = processSE $
@@ -74,31 +76,31 @@ process n s = case process' s of
 	r -> r
 
 process' :: P.Text -> Text
-process' (TopText _ _ [VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
+process' (P.TopText _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
 	Vocative v
-process' (IText_1 _ _ _ [VocativeSumti [(_, v, _)] _ _] Nothing) = Vocative v
-process' (IText_1 _ _ _ fs@(_ : _) Nothing) = Free fs
-process' (IText_1 _ _ _ _ (Just t)) = process 1 t
+process' (P.IText_1 _ _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing) = Vocative v
+process' (P.IText_1 _ _ _ fs@(_ : _) Nothing) = Free fs
+process' (P.IText_1 _ _ _ _ (Just t)) = process 1 t
 process' (P.Prenex ss (_, "zo'u", _) _ t) = Prenex (map readSumti ss) $ process 1 t
 process' (P.PrenexSentence ss (_, "zo'u", _) _ t) =
 	Prenex (map readSumti ss) $ process 1 t
-process' (TermsBridiTail ss _ _ (SelbriTailTerms selbri ts _ _)) =
+process' (P.TermsBridiTail ss _ _ (P.SelbriTailTerms selbri ts _ _)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss ts
-process' (TermsBridiTail ss _ _ (P.Selbri selbri)) =
+process' (P.TermsBridiTail ss _ _ (P.Selbri selbri)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss []
-process' (TermsBridiTail ss _ _
-	(GekSentence
-		(STagGik
+process' (P.TermsBridiTail ss _ _
+	(P.GekSentence
+		(P.STagGik
 			(P.Time _ [((_, tense, _), _, _)] _ _)
 			((_, "gi", _), _, _))
 		t ((_, "gi", _), _, _) u _ _ _)) =
 	TagGI tense
-		(processSE $ process 1 $ TermsBridiTail ss undefined undefined t)
+		(processSE $ process 1 $ P.TermsBridiTail ss undefined undefined t)
 		(processSE $ process (1 +
-			countc (TermsBridiTail ss undefined undefined t)) $
-			TermsBridiTail ss undefined undefined u)
-process' (GekSentence
-	(STagGik
+			countc (P.TermsBridiTail ss undefined undefined t)) $
+			P.TermsBridiTail ss undefined undefined u)
+process' (P.GekSentence
+	(P.STagGik
 		(P.Time _ [((_, tense, _), _, _)] _ _)
 		((_, "gi", _), _, _))
 	t ((_, "gi", _), _, _) u _ _ _) =
@@ -118,7 +120,7 @@ processTagSumti s t = let
 readTagSumti :: Int -> [Int] -> [(Tag, Sumti)] -> [P.Sumti]
 	-> (Int, [Int], [(Tag, Sumti)])
 readTagSumti n e r [] = (n, e, reverse r)
-readTagSumti n e r (TagSumti t s : rest) = case readTag t of
+readTagSumti n e r (P.TagSumti t s : rest) = case readTag t of
 	(Just i, tag) -> readTagSumti (next i e) (i : e) ((tag, sumti) : r) rest
 	(_, tag) -> readTagSumti n e ((tag, sumti) : r) rest
 	where
@@ -135,8 +137,8 @@ readTag (P.Time _ [((_, t, _), Nothing, Nothing)] _ _) = (Nothing, Time [t])
 readTag (P.Time _ _ _ ts) = (Nothing, Time $ map readTime ts)
 readTag t = (Nothing, UnknownTag $ "readTag: " ++ show t)
 
-readTime ::  IntervalProperty -> String
-readTime (ZAhO (_, z, _) _) = z
+readTime :: P.IntervalProperty -> String
+readTime (P.ZAhO (_, z, _) _) = z
 readTime ip = "readTime: " ++ show ip
 
 faList :: [(String, Int)]
@@ -149,20 +151,20 @@ faList = [
  ]
 
 readSumti :: P.Sumti -> Sumti
-readSumti (P.KOhA (_, "ce'u", _) [XINumber (_, "xi", _) _ [([], pa, [])] _]) =
+readSumti (P.KOhA (_, "ce'u", _) [P.XINumber (_, "xi", _) _ [([], pa, [])] _]) =
 	CEhU $ round $ paToInt [pa]
 readSumti (P.KOhA (_, "ce'u", _) []) = CEhUPre
 readSumti s@(P.KOhA (_, "ce'u", _) f) =
 	UnknownSumti $ show s ++ " " ++ show f
 readSumti (P.KOhA (_, k, _) _) = KOhA k
-readSumti (LALE (_, "lo", _) _ st _ _) = LO selbri relative
+readSumti (P.LALE (_, "lo", _) _ st _ _) = LO selbri relative
 	where (selbri, relative) = readSumtiTail st
-readSumti (LALE (_, "la", _) _ st _ _) = LA $ Right selbri
+readSumti (P.LALE (_, "la", _) _ st _ _) = LA $ Right selbri
 	where (selbri, _relative) = readSumtiTail st
 readSumti (P.LA (_, "la", _) _ _ [(_, n, _)] _) = LA $ Left n
 readSumti (P.LI _ _ m _ _) = LI $ readMex m
 readSumti (P.KU _ _) = KU
-readSumti (TagSumti (P.FIhO (_, "fi'o", _) _ selbri _ _) sumti) =
+readSumti (P.TagSumti (P.FIhO (_, "fi'o", _) _ selbri _ _) sumti) =
 	SFIhO (readSelbri selbri) (readSumti sumti)
 readSumti (P.ZOI _ "zoi" ws _ _) = ZOI $ processZOI $ concat ws
 readSumti (P.LAhE_NAhE (_, "tu'a", _) _ _ _ s _ _) = TUhA $ readSumti s
@@ -171,8 +173,8 @@ readSumti (P.OuterQuantifier _ s (Just (P.GOI (_, "goi", _) _ t _ _))) =
 readSumti (P.OuterQuantifier _ s (Just r)) =
 	Relative (readSumti s) (readRelativeClauses r)
 readSumti (P.LerfuString ls _ _) = LerfuString $ concatMap (\(_, s, _) -> s) ls
-readSumti (GekSumti
-	(STagGik (P.Time _ [((_, pu, _), _, _)] _ _) ((_, "gi", _), _, _))
+readSumti (P.GekSumti
+	(P.STagGik (P.Time _ [((_, pu, _), _, _)] _ _) ((_, "gi", _), _, _))
 	s ((_, "gi", _), _, _) t) = STense pu (readSumti s) (readSumti t)
 readSumti (P.LAhE_NAhE (_, "la'e", _) _ _ _ s _ _) = LAhE $ readSumti s
 readSumti s = UnknownSumti $ "readSumti: " ++ show s
@@ -183,12 +185,12 @@ processZOI ('.' : str) = let ('.' : s) = reverse str in
 processZOI str = let ('.' : s) = reverse str in
 	dropWhile isSpace $ reverse $ dropWhile isSpace s
 
-readMex :: Operand -> Mex
+readMex :: P.Operand -> Mex
 readMex (P.Number n _ _) = readNumber n
 readMex (P.JOhI (_, "jo'i", _) _ ns _ _) = JOhI $ map readMex ns
 readMex o = UnknownMex $ "readMex: " ++ show o
 
-readNumber :: [Clause] -> Mex
+readNumber :: [P.Clause] -> Mex
 readNumber = Number . paToInt . map (\(_, p, _) -> p)
 
 processKIhO :: [String] -> [String]
@@ -228,15 +230,15 @@ paList = [
 	(["so", "9"], 9)
  ]
 
-readSumtiTail :: SumtiTail -> (Selbri, Maybe RelativeClause)
-readSumtiTail (SelbriRelativeClauses s Nothing) =
+readSumtiTail :: P.SumtiTail -> (Selbri, Maybe RelativeClause)
+readSumtiTail (P.SelbriRelativeClauses s Nothing) =
 	(readSelbri s, Nothing)
-readSumtiTail (SelbriRelativeClauses s (Just r)) =
+readSumtiTail (P.SelbriRelativeClauses s (Just r)) =
 	(readSelbri s, Just $ readRelativeClauses r)
 readSumtiTail st = (UnknownSelbri $ "readSumtiTail: " ++ show st, Nothing)
 
 readRelativeClauses :: P.RelativeClause -> RelativeClause
-readRelativeClauses (NOI (_, "poi", _) _ bridi _ _) =
+readRelativeClauses (P.NOI (_, "poi", _) _ bridi _ _) =
 	POI $ process 1 bridi
 readRelativeClauses r = UnknownRelativeClause $  show r
 

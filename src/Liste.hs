@@ -29,4 +29,3 @@ skaste = [
 	("sloska", (255, 215, 0)),	-- Gold
 	("xunblabi", (255, 192, 203))	-- Pink
  ]
-
