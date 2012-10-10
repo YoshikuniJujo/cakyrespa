@@ -1,4 +1,4 @@
-module Read (readLojban) where
+module Tcidu (readLojban) where
 
 import Klesi
 

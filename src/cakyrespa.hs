@@ -1,8 +1,8 @@
 module Main where
 
-import Run(run)
-import Command(command)
-import Read(readLojban)
+import Minde(run)
+import Jimpe(command)
+import Tcidu(readLojban)
 
 import Graphics.UI.GLUT(mainLoop)
 import Graphics.UI.GLUT.Turtle(

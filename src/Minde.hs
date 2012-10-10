@@ -1,4 +1,4 @@
-module Run (run) where
+module Minde (run) where
 
 import Klesi(Minde(..), Sumti)
 

@@ -1,4 +1,4 @@
-module Command (command, Minde(..), Sumti) where
+module Jimpe (command, Minde(..), Sumti) where
 
 import Klesi
 
