@@ -20,7 +20,7 @@ jmi t@(Bridi (NA (Brivla brivla)) terms) args = fromMaybe (SRERA $ show t) $
 	lookup brivla narmidste >>= \mid -> mid terms args
 jmi (Prenex sumste bridi) _ = MIDSTE $ jmi bridi <$> mapM bagi sumste
 	where
-	bagi (STense "ba" pavsuhi relsuhi) = bagi pavsuhi ++ bagi relsuhi
+	bagi (STense "ba" pavsu'i relsu'i) = bagi pavsu'i ++ bagi relsu'i
 	bagi sumti = [sumti]
 jmi (TagGI "ba" pavbri relbri) args =
 	MIDSTE $ [jmi pavbri args, jmi relbri args]
@@ -71,47 +71,48 @@ klama terms args = do
 
 crakla terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
-	return . CRAKLA . fromMaybe 100 $ lahu terms args
+	return . CRAKLA . fromMaybe 100 $ la'u terms args
 
 rixykla terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
-	return . RIXYKLA . fromMaybe 100 $ lahu terms args
+	return . RIXYKLA . fromMaybe 100 $ la'u terms args
 
 carna terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
 	farna <- case lookup (FA 3) terms of
 		Nothing -> return "zunle"
-		Just sumti -> apply args sumti $ \s -> case s of
+		Just far -> apply args far $ \f -> case f of
 			LO (Brivla zp) _ -> return zp
 			_ -> fail "carna: bad direction"
-	case farna of
-		"zunle" -> return $ ZUNLE $ fromMaybe 90 $ lahu terms args
-		"pritu" -> return $ PRITU $ fromMaybe 90 $ lahu terms args
+	($ fromMaybe 90 $ la'u terms args) <$> case farna of
+		"zunle" -> return ZUNLE
+		"pritu" -> return PRITU
 		_ -> fail "carna: bad direction"
 
-lahu :: [(Tag, Sumti)] -> [Sumti] -> Maybe Double
-lahu terms args = do
+la'u :: [(Tag, Sumti)] -> [Sumti] -> Maybe Double
+la'u terms args = do
 	klani <- lookup (BAI 1 "la'u") terms
 	apply args klani $ \k -> case k of
-		LI (Number d) -> return d
-		_ -> fail "lahu: not number"
+		LI (Number n) -> return n
+		_ -> fail "la'u: not number"
 
-clugau s _ = do
-	KOhA "ko" <- lookup (FA 1) s
-	case ((Time ["co'a"], KU) `elem` s, (Time ["co'u"], KU) `elem` s) of
+clugau terms _ = do
+	KOhA "ko" <- lookup (FA 1) terms
+	case ((Time ["co'a"], KU) `elem` terms,
+		(Time ["co'u"], KU) `elem` terms) of
 		(True, False) -> return COhACLUGAU
 		(False, True) -> return COhUCLUGAU
 		_ -> fail "clugau: bad tense"
 
-galfi s args = do
-	TUhA (KOhA "ko") <- lookup (FA 1) s
-	LO (Brivla "foldi") Nothing <- lookup (FA 2) s
-	sumti <- lookup (FA 3) s
-	apply args sumti $ \smt -> case smt of
-		LO (Brivla skari) Nothing -> do
-			clr <- lookup skari skaste
-			return $ let (r, g, b) = clr in FLOSKA r g b
-		_ -> return $ SRERA $ show s
+galfi terms args = do
+	TUhA (KOhA "ko") <- lookup (FA 1) terms
+	LO (Brivla "foldi") Nothing <- lookup (FA 2) terms
+	terga'i <- lookup (FA 3) terms
+	apply args terga'i $ \skasu'i -> case skasu'i of
+		LO (Brivla skale'u) Nothing -> do
+			skari <- lookup skale'u skaste
+			return $ let (r, g, b) = skari in FLOSKA r g b
+		_ -> return $ SRERA $ "galfi: " ++ show terms ++ " " ++ show args
 
 pilno terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
