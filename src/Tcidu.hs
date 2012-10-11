@@ -18,7 +18,7 @@ parse :: String -> Text
 parse = either (ParseError . show) (process 1) . P.parse
 
 process :: Int -> P.Text -> Text
-process n s = processSE $ case process' s of
+process n s = processSE $ case process' n s of
 	Bridi selbri terms -> Bridi selbri (processCEhU n terms)
 	r -> r
 
@@ -29,46 +29,38 @@ processSE (Bridi (SE n selbri) ss) = processSE $
 	Bridi selbri $ map (first $ flipTag n) ss
 processSE l = l
 
+pCEhU :: Sumti -> (Int, Int -> Sumti)
+pCEhU CEhUPre = (1, CEhU)
+pCEhU (LO s (Just (POI (Bridi (ME sumti) ss)))) = let (b, ce'u) = pCEhU sumti in
+	(b, \n -> LO s $ Just $ POI $ Bridi (ME $ ce'u n) ss)
+pCEhU (LO (BE selbri sumti) Nothing) = let (b, ce'u) = pCEhU sumti in
+	(b, \n -> LO (BE selbri $ ce'u n) Nothing)
+pCEhU (SFIhO modal sumti) = let (b, ce'u) = pCEhU sumti in
+	(b, \n -> SFIhO modal $ ce'u n)
+pCEhU (GOI sumti1 sumti2) = let
+	(b1, ce'u1) = pCEhU sumti1
+	(b2, ce'u2) = pCEhU sumti2 in
+	(b1 + b2, \n -> GOI (ce'u1 n) (ce'u2 $ b1 + n))
+pCEhU (LA (Right (ME sumti))) = let (b, ce'u) = pCEhU sumti in
+	(b, \n -> LA $ Right $ ME $ ce'u n)
+pCEhU (Relative sumti r) = let (b, ce'u) = pCEhU sumti in
+	(b, \n -> Relative (ce'u n) r)
+pCEhU (LAhE sumti) = let (b, ce'u) = pCEhU sumti in
+	(b, LAhE . ce'u)
+pCEhU sumti = (0, const sumti)
+
 processCEhU :: Int -> [(Tag, Sumti)] -> [(Tag, Sumti)]
 processCEhU _ [] = []
-processCEhU n ((t, CEhUPre) : rest) = (t, CEhU n) : processCEhU (n + 1) rest
-processCEhU n ((t, LO s (Just (POI (Bridi (ME CEhUPre) ss)))) : rest) =
-	(t, LO s $ Just $ POI $ Bridi (ME $ CEhU n) ss) : processCEhU (n + 1) rest
-processCEhU n ((t, LO (BE selbri CEhUPre) Nothing) : rest) =
-	(t, LO (BE selbri $ CEhU n) Nothing) : processCEhU (n + 1) rest
-processCEhU n ((t, LO (BE selbri (SFIhO modal CEhUPre)) Nothing) : rest) =
-	(t, LO (BE selbri $ SFIhO modal $ CEhU n) Nothing) :
-		processCEhU (n + 1) rest
-processCEhU n ((t, GOI CEhUPre CEhUPre) : rest) =
-	(t, GOI (CEhU n) (CEhU $ n + 1)) : processCEhU (n + 2) rest
-processCEhU n ((t, GOI CEhUPre s) : rest) =
-	(t, GOI (CEhU n) s) : processCEhU (n + 1) rest
-processCEhU n ((t, GOI s CEhUPre) : rest) =
-	(t, GOI s (CEhU n)) : processCEhU (n + 1) rest
-processCEhU n ((t, LA (Right (ME CEhUPre))) : rest) =
-	(t, LA $ Right $ ME $ CEhU n) : processCEhU (n + 1) rest
-processCEhU n ((t, Relative CEhUPre r) : rest) =
-	(t, Relative (CEhU n) r) : processCEhU (n + 1) rest
-processCEhU n (s : rest) = s : processCEhU n rest
+processCEhU n ((t, sumti) : rest) = let (b, ce'u) = pCEhU sumti in
+	(t, ce'u n) : processCEhU (n + b) rest
 
-countc :: P.Text -> Int
-countc = countCEhU 0 . (\(Bridi _ s) -> s) . process'
+countc :: Int -> P.Text -> Int
+countc n = countCEhU 0 . (\(Bridi _ s) -> s) . process' n
 
 countCEhU :: Int -> [(Tag, Sumti)] -> Int
 countCEhU n [] = n
-countCEhU n ((_, CEhUPre) : rest) = countCEhU (n + 1) rest
-countCEhU n ((_, LO _ (Just (POI (Bridi (ME CEhUPre) _)))) : rest) =
-	countCEhU (n + 1) rest
-countCEhU n ((_, LO (BE _ CEhUPre) Nothing) : rest) =
-	countCEhU (n + 1) rest
-countCEhU n ((_, LO (BE _ (SFIhO _ CEhUPre)) Nothing) : rest) =
-	countCEhU (n + 1) rest
-countCEhU n ((_, GOI CEhUPre CEhUPre) : rest) = countCEhU (n + 2) rest
-countCEhU n ((_, GOI CEhUPre _) : rest) = countCEhU (n + 1) rest
-countCEhU n ((_, GOI _ CEhUPre) : rest) = countCEhU (n + 1) rest
-countCEhU n ((_, LA (Right (ME CEhUPre))) : rest) = countCEhU (n + 1) rest
-countCEhU n ((_, Relative CEhUPre _) : rest) = countCEhU (n + 1) rest
-countCEhU n (_ : rest) = countCEhU n rest
+countCEhU n ((_, sumti) : rest) = let (b, _) = pCEhU sumti in
+	countCEhU (n + b) rest
 
 flipTag :: Int -> Tag -> Tag
 flipTag n (FA f)
@@ -76,42 +68,42 @@ flipTag n (FA f)
 	| f == n = FA 1
 flipTag _ t = t
 
-process' :: P.Text -> Text
-process' (P.TopText _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
+process' :: Int -> P.Text -> Text
+process' _ (P.TopText _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
 	Vocative v
-process' (P.IText_1 _ _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing) = Vocative v
-process' (P.IText_1 _ _ _ fs@(_ : _) Nothing) = Free fs
-process' (P.IText_1 _ _ _ _ (Just t)) = process 1 t
-process' (P.Prenex ss (_, "zo'u", _) _ t) = Prenex (map readSumti ss) $ process 1 t
-process' (P.PrenexSentence ss (_, "zo'u", _) _ t) =
-	Prenex (map readSumti ss) $ process 1 t
-process' (P.TermsBridiTail ss _ _ (P.SelbriTailTerms selbri ts _ _)) =
+process' _ (P.IText_1 _ _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing) = Vocative v
+process' _ (P.IText_1 _ _ _ fs@(_ : _) Nothing) = Free fs
+process' n (P.IText_1 _ _ _ _ (Just t)) = process n t
+process' n (P.Prenex ss (_, "zo'u", _) _ t) = Prenex (map readSumti ss) $ process n t
+process' n (P.PrenexSentence ss (_, "zo'u", _) _ t) =
+	Prenex (map readSumti ss) $ process n t
+process' _ (P.TermsBridiTail ss _ _ (P.SelbriTailTerms selbri ts _ _)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss ts
-process' (P.TermsBridiTail ss _ _ (P.Selbri selbri)) =
+process' _ (P.TermsBridiTail ss _ _ (P.Selbri selbri)) =
 	Bridi (readSelbri selbri) $ processTagSumti ss []
-process' (P.TermsBridiTail ss _ _
+process' n (P.TermsBridiTail ss _ _
 	(P.GekSentence
 		(P.STagGik
 			(P.Time _ [((_, tense, _), _, _)] _ _)
 			((_, "gi", _), _, _))
 		t ((_, "gi", _), _, _) u _ _ _)) =
 	TagGI tense
-		(processSE $ process 1 $ P.TermsBridiTail ss undefined undefined t)
-		(processSE $ process (1 +
-			countc (P.TermsBridiTail ss undefined undefined t)) $
+		(processSE $ process n $ P.TermsBridiTail ss undefined undefined t)
+		(processSE $ process (n +
+			countc n (P.TermsBridiTail ss undefined undefined t)) $
 			P.TermsBridiTail ss undefined undefined u)
-process' (P.GekSentence
+process' n (P.GekSentence
 	(P.STagGik
 		(P.Time _ [((_, tense, _), _, _)] _ _)
 		((_, "gi", _), _, _))
 	t ((_, "gi", _), _, _) u _ _ _) =
 	TagGI tense
-		(processSE $ process 1 t)
-		(processSE $ process 1 u)
-process' (P.Selbri selbri) = Bridi (readSelbri selbri) []
-process' (P.SelbriTailTerms selbri ts _ _) =
+		(processSE $ process n t)
+		(processSE $ process n u)
+process' _ (P.Selbri selbri) = Bridi (readSelbri selbri) []
+process' _ (P.SelbriTailTerms selbri ts _ _) =
 	Bridi (readSelbri selbri) $ processTagSumti [] ts
-process' t = UnknownText $ "process: " ++ show t
+process' _ t = UnknownText $ "process: " ++ show t
 
 processTagSumti :: [P.Sumti] -> [P.Sumti] -> [(Tag, Sumti)]
 processTagSumti s t = let

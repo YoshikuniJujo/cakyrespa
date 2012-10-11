@@ -223,10 +223,13 @@ rejgau terms args = do
 tcidu terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
 	sumti <- lookup (FA 2) terms
-	apply args sumti $ \smt -> case smt of
-		LA (Right (ME (ZOI fp))) -> return $ TCIDU fp
-		LAhE (ZOI fp) -> return $ TCIDU fp
-		_ -> return $ SRERA $ "tcidu: " ++ show terms
+	fps <- apply args sumti $ \smt -> case smt of
+		LA (Right (ME fps)) -> return fps
+		LAhE fps -> return fps
+		_ -> fail "tcidu: bad"
+	apply args fps $ \smt -> case smt of
+		ZOI fp -> return $ TCIDU fp
+		_ -> fail "tcidu: bad"
 
 napilno terms _ = do
 	KOhA "ko" <- lookup (FA 1) terms
