@@ -31,6 +31,7 @@ data Text
 	| TagGI String Text Text
 	| Vocative String
 	| Free [Free]
+	| MultiText [Text]
 	| UnknownText String
 	| ParseError String
 	deriving (Show, Eq)

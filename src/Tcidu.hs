@@ -1,6 +1,7 @@
 module Tcidu(parse) where
 
 import Control.Arrow(first, second)
+import Data.Maybe(catMaybes)
 import Data.Char(isSpace, toLower)
 import qualified Language.Lojban.Parser as P(
 	parse, Text, Clause,
@@ -31,6 +32,13 @@ process n ptext = second flipText $ proc n ptext
 			| f == i = FA 1
 		flipTag t = t
 
+some :: (a -> b -> (a, c)) -> a -> [b] -> (a, [c])
+some _ x0 [] = (x0, [])
+some f x0 (y : ys) = let
+	(x1, z) = f x0 y
+	(x', zs) = some f x1 ys in
+	(x', z : zs)
+
 proc :: Int -> P.Text -> (Int, Text)
 proc n (P.TopText _ _ _ _ (Just t) _) = proc n t
 proc n (P.TopText _ _ [P.VocativeSumti [(_, v, _)] _ _] _ _ _) = (n, Vocative v)
@@ -38,6 +46,10 @@ proc n (P.TopText _ _ fs@(_ : _) _ _ _) = (n, Free fs)
 proc n (P.IText_1 _ _ _ _ (Just t)) = proc n t
 proc n (P.IText_1 _ _ _ [P.VocativeSumti [(_, v, _)] _ _] _) = (n, Vocative v)
 proc n (P.IText_1 _ _ _ fs@(_ : _) _) = (n, Free fs)
+proc n (P.StatementI ptext iptexts) =
+	second MultiText $ some proc n $ ptext : ptexts
+	where
+	ptexts = catMaybes $ map (\(_, _, t) -> t) iptexts
 proc n (P.Selbri selbri) = (n, Bridi (readSelbri selbri) [])
 proc n (P.SelbriTailTerms pselbri pterms _ _) = (n', Bridi selbri terms)
 	where	selbri = readSelbri pselbri

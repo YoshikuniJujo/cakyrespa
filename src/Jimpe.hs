@@ -25,6 +25,7 @@ jmi (Prenex sumste bridi) _ = MIDYSTE $ jmi bridi <$> mapM bagi sumste
 	bagi sumti = [sumti]
 jmi (TagGI "ba" pavbri relbri) args =
 	MIDYSTE [jmi pavbri args, jmi relbri args]
+jmi (MultiText texts) args = MIDYSTE $ map (($ args) . jmi) texts
 jmi (Vocative "co'o") _ = COhO
 jmi l _ = SRERA $ show l
 
