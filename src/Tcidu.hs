@@ -17,20 +17,19 @@ parse :: String -> Text
 parse = either (ParseError . show) (snd . process 1) . P.parse
 
 process :: Int -> P.Text -> (Int, Text)
-process n s = second processSE $ proc n s
-
-processSE :: Text -> Text
-processSE (Bridi (NA (SE n selbri)) ss) = processSE $
-	Bridi (NA selbri) $ map (first $ flipTag n) ss
-processSE (Bridi (SE n selbri) ss) = processSE $
-	Bridi selbri $ map (first $ flipTag n) ss
-processSE l = l
-
-flipTag :: Int -> Tag -> Tag
-flipTag n (FA f)
-	| f == 1 = FA n
-	| f == n = FA 1
-flipTag _ t = t
+process n s = second flipText $ proc n s
+	where
+	flipText (Bridi (NA (SE i selbri)) terms) =
+		flipText $ Bridi (NA selbri) $ flipTerms i terms
+	flipText (Bridi (SE i selbri) terms) =
+		flipText $ Bridi selbri $ flipTerms i terms
+	flipText text = text
+	flipTerms i = map $ first flipTag
+		where
+		flipTag (FA f)
+			| f == 1 = FA i
+			| f == i = FA 1
+		flipTag t = t
 
 proc :: Int -> P.Text -> (Int, Text)
 proc n (P.TopText _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing Nothing
@@ -38,7 +37,7 @@ proc n (P.TopText _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing Nothing
 proc n (P.IText_1 _ _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing) =
 	(n, Vocative v)
 proc n (P.IText_1 _ _ _ fs@(_ : _) Nothing) = (n, Free fs)
-proc n (P.IText_1 _ _ _ _ (Just t)) = process n t
+proc n (P.IText_1 _ _ _ _ (Just t)) = proc n t
 proc n (P.Prenex ss (_, "zo'u", _) _ t) = (n', Prenex (map readSumti ss) ret)
 	where
 	(n', ret) = process n t
@@ -60,9 +59,7 @@ proc n (P.TermsBridiTail ss _ _
 			(P.Time _ [((_, tense, _), _, _)] _ _)
 			((_, "gi", _), _, _))
 		t ((_, "gi", _), _, _) u _ _ _)) =
-	(n2, TagGI tense
-		(processSE ret1)
-		(processSE ret2))
+	(n2, TagGI tense ret1 ret2)
 	where
 	(n1, ret1) = process n $ P.TermsBridiTail ss undefined undefined t
 	(n2, ret2) = process (n1 + 1)  $ P.TermsBridiTail ss undefined undefined u
@@ -71,9 +68,7 @@ proc n (P.GekSentence
 		(P.Time _ [((_, tense, _), _, _)] _ _)
 		((_, "gi", _), _, _))
 	t ((_, "gi", _), _, _) u _ _ _) =
-	(n, TagGI tense
-		(processSE $ snd $ process n t)
-		(processSE $ snd $ process n u))
+	(n, TagGI tense (snd $ process n t) (snd $ process n u))
 proc n (P.Selbri selbri) = (n, Bridi (readSelbri selbri) [])
 proc n (P.SelbriTailTerms selbri ts _ _) =
 	(n', Bridi (readSelbri selbri) terms)
