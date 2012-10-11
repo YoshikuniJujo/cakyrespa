@@ -1,7 +1,6 @@
 module Tcidu(parse) where
 
 import Control.Arrow(first, second)
-import Data.Maybe(fromJust)
 import Data.Char(isSpace, toLower)
 import qualified Language.Lojban.Parser as P(
 	parse, Text, Clause,
@@ -10,7 +9,7 @@ import qualified Language.Lojban.Parser as P(
 	Tag(..), Sumti(..), SumtiTail(..), RelativeClause(..), Operand(..))
 import Klesi(
 	Text(..), Selbri(..), Tag(..), Sumti(..), Mex(..), RelativeClause(..))
-import Liste(mezofaliste, mezoseliste, mezopatcidu)
+import Liste(mezofatcidu, mezosetcidu, mezopatcidu)
 
 --------------------------------------------------------------------------------
 
@@ -126,10 +125,10 @@ readTagSumti n e r (s : rest) =
 	readTagSumti (next n e) (n : e) ((FA n, readSumti s) : r) rest
 
 readTag :: P.Tag -> (Maybe Int, Tag)
-readTag (P.FA (_, f, _) _) = let n = fromJust $ lookup f mezofaliste in (Just n, FA n)
+readTag (P.FA (_, f, _) _) = (Just $ mezofatcidu f, FA $ mezofatcidu f)
 readTag (P.BAI _ Nothing (_, b, _) _ _) = (Nothing, BAI 1 b)
 readTag (P.BAI _ (Just (_, s, _)) (_, b, _) _ _) =
-	(Nothing, BAI (fromJust $ lookup s mezoseliste) b)
+	(Nothing, BAI (mezosetcidu s) b)
 readTag (P.Time _ [((_, t, _), Nothing, Nothing)] _ _) = (Nothing, Time [t])
 readTag (P.Time _ _ _ ts) = (Nothing, Time $ map readTime ts)
 readTag t = (Nothing, UnknownTag $ "readTag: " ++ show t)
@@ -201,7 +200,7 @@ readSelbri (P.NU (_, "nu", _) _ _ _ bridi _ _) = NU $ snd $ process 1 bridi
 readSelbri (P.NU (_, "du'u", _) _ _ _ bridi _ _) = DUhU $ snd $ process 1 bridi
 readSelbri (P.NA (_, "na", _) _ s) = NA $ readSelbri s
 readSelbri (P.ME (_, "me", _) _ s _ _ _ _) = ME $ readSumti s
-readSelbri (P.SE (_, se, _) _ s) = SE (fromJust $ lookup se mezoseliste) $ readSelbri s
+readSelbri (P.SE (_, se, _) _ s) = SE (mezosetcidu se) $ readSelbri s
 readSelbri s = UnknownSelbri $ "readSelbri: " ++ show s
 	
 next :: Int -> [Int] -> Int

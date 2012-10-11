@@ -1,4 +1,4 @@
-module Liste (skaste, mezofaliste, mezoseliste, mezopatcidu) where
+module Liste (skaste, mezofatcidu, mezosetcidu, mezopatcidu) where
 
 import Data.Maybe
 
@@ -31,6 +31,9 @@ skaste = [
 	("sloska", (255, 215, 0)),	-- Gold
 	("xunblabi", (255, 192, 203))	-- Pink
  ]
+
+mezofatcidu :: String -> Int
+mezofatcidu = fromJust . flip lookup mezofaliste
 
 mezofaliste :: [(String, Int)]
 mezofaliste = [
@@ -77,6 +80,9 @@ mezopaliste = [
 	(["bi", "8"], 8),
 	(["so", "9"], 9)
  ]
+
+mezosetcidu :: String -> Int
+mezosetcidu = fromJust . flip lookup mezoseliste
 
 mezoseliste :: [(String, Int)]
 mezoseliste = [
