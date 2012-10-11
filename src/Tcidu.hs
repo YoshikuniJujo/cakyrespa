@@ -15,7 +15,12 @@ import Liste(mezofaliste, mezoseliste, mezopaliste)
 --------------------------------------------------------------------------------
 
 parse :: String -> Text
-parse = processSE . either (ParseError . show) (process 1) . P.parse
+parse = either (ParseError . show) (process 1) . P.parse
+
+process :: Int -> P.Text -> Text
+process n s = processSE $ case process' s of
+	Bridi selbri terms -> Bridi selbri (processCEhU n terms)
+	r -> r
 
 processSE :: Text -> Text
 processSE (Bridi (NA (SE n selbri)) ss) = processSE $
@@ -70,11 +75,6 @@ flipTag n (FA f)
 	| f == 1 = FA n
 	| f == n = FA 1
 flipTag _ t = t
-
-process :: Int -> P.Text -> Text
-process n s = case process' s of
-	Bridi selbri terms -> Bridi selbri (processCEhU n terms)
-	r -> r
 
 process' :: P.Text -> Text
 process' (P.TopText _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing Nothing Nothing) =
