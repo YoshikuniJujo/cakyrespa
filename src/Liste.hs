@@ -1,4 +1,4 @@
-module Liste (skaste, faList, seList, paList) where
+module Liste (skaste, mezofaliste, mezoseliste, mezopaliste) where
 
 skaste :: [(String, (Int, Int, Int))]
 skaste = [
@@ -30,8 +30,8 @@ skaste = [
 	("xunblabi", (255, 192, 203))	-- Pink
  ]
 
-faList :: [(String, Int)]
-faList = [
+mezofaliste :: [(String, Int)]
+mezofaliste = [
 	("fa", 1),
 	("fe", 2),
 	("fi", 3),
@@ -39,8 +39,8 @@ faList = [
 	("fu", 5)
  ]
 
-paList :: [([String], Double)]
-paList = [
+mezopaliste :: [([String], Double)]
+mezopaliste = [
 	(["no", "0"], 0),
 	(["pa", "1"], 1),
 	(["re", "2"], 2),
@@ -53,8 +53,8 @@ paList = [
 	(["so", "9"], 9)
  ]
 
-seList :: [(String, Int)]
-seList = [
+mezoseliste :: [(String, Int)]
+mezoseliste = [
 	("se", 2),
 	("te", 3),
 	("ve", 4),

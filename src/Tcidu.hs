@@ -10,7 +10,7 @@ import qualified Language.Lojban.Parser as P(
 	Tag(..), Sumti(..), SumtiTail(..), RelativeClause(..), Operand(..))
 import Klesi(
 	Text(..), Selbri(..), Tag(..), Sumti(..), Mex(..), RelativeClause(..))
-import Liste
+import Liste(mezofaliste, mezoseliste, mezopaliste)
 
 --------------------------------------------------------------------------------
 
@@ -130,10 +130,10 @@ readTagSumti n e r (s : rest) =
 	readTagSumti (next n e) (n : e) ((FA n, readSumti s) : r) rest
 
 readTag :: P.Tag -> (Maybe Int, Tag)
-readTag (P.FA (_, f, _) _) = let n = fromJust $ lookup f faList in (Just n, FA n)
+readTag (P.FA (_, f, _) _) = let n = fromJust $ lookup f mezofaliste in (Just n, FA n)
 readTag (P.BAI _ Nothing (_, b, _) _ _) = (Nothing, BAI 1 b)
 readTag (P.BAI _ (Just (_, s, _)) (_, b, _) _ _) =
-	(Nothing, BAI (fromJust $ lookup s seList) b)
+	(Nothing, BAI (fromJust $ lookup s mezoseliste) b)
 readTag (P.Time _ [((_, t, _), Nothing, Nothing)] _ _) = (Nothing, Time [t])
 readTag (P.Time _ _ _ ts) = (Nothing, Time $ map readTime ts)
 readTag t = (Nothing, UnknownTag $ "readTag: " ++ show t)
@@ -200,7 +200,7 @@ paToInt pas = pti $ reverse $ processKIhO pas
 
 pti :: [String] -> Double
 pti [] = 0
-pti (p : rest) = fromJust (lookup' p paList) + 10 * pti rest
+pti (p : rest) = fromJust (lookup' p mezopaliste) + 10 * pti rest
 
 lookup' :: Eq a => a -> [([a], b)] -> Maybe b
 lookup' _ [] = Nothing
@@ -228,7 +228,7 @@ readSelbri (P.NU (_, "nu", _) _ _ _ bridi _ _) = NU $ process 1 bridi
 readSelbri (P.NU (_, "du'u", _) _ _ _ bridi _ _) = DUhU $ process 1 bridi
 readSelbri (P.NA (_, "na", _) _ s) = NA $ readSelbri s
 readSelbri (P.ME (_, "me", _) _ s _ _ _ _) = ME $ readSumti s
-readSelbri (P.SE (_, se, _) _ s) = SE (fromJust $ lookup se seList) $ readSelbri s
+readSelbri (P.SE (_, se, _) _ s) = SE (fromJust $ lookup se mezoseliste) $ readSelbri s
 readSelbri s = UnknownSelbri $ "readSelbri: " ++ show s
 	
 next :: Int -> [Int] -> Int
