@@ -10,7 +10,7 @@ import qualified Language.Lojban.Parser as P(
 	Tag(..), Sumti(..), SumtiTail(..), RelativeClause(..), Operand(..))
 import Klesi(
 	Text(..), Selbri(..), Tag(..), Sumti(..), Mex(..), RelativeClause(..))
-import Liste(mezofaliste, mezoseliste, mezopaliste)
+import Liste(mezofaliste, mezoseliste, mezopatcidu)
 
 --------------------------------------------------------------------------------
 
@@ -18,9 +18,7 @@ parse :: String -> Text
 parse = either (ParseError . show) (snd . process 1) . P.parse
 
 process :: Int -> P.Text -> (Int, Text)
-process n s = second processSE $ case process' n s of
-	(n', Bridi selbri terms) -> (n', Bridi selbri terms)
-	r -> r
+process n s = second processSE $ process' n s
 
 processSE :: Text -> Text
 processSE (Bridi (NA (SE n selbri)) ss) = processSE $
@@ -139,7 +137,7 @@ readTime ip = "readTime: " ++ show ip
 
 readSumti :: P.Sumti -> Sumti
 readSumti (P.KOhA (_, "ce'u", _) [P.XINumber (_, "xi", _) _ [([], pa, [])] _]) =
-	CEhU $ round $ paToInt [pa]
+	CEhU $ round $ mezopatcidu [pa]
 readSumti (P.KOhA (_, "ce'u", _) []) = CEhUPre
 readSumti s@(P.KOhA (_, "ce'u", _) f) =
 	UnknownSumti $ show s ++ " " ++ show f
@@ -178,30 +176,7 @@ readMex (P.JOhI (_, "jo'i", _) _ ns _ _) = JOhI $ map readMex ns
 readMex o = UnknownMex $ "readMex: " ++ show o
 
 readNumber :: [P.Clause] -> Mex
-readNumber = Number . paToInt . map (\(_, p, _) -> p)
-
-processKIhO :: [String] -> [String]
-processKIhO = reverse . pk 3 . reverse
-	where
-	pk _ [] = []
-	pk n ("ki'o" : rest) = replicate n "no" ++ pk 3 rest
-	pk n (pa : rest)
-		| n > 0 = pa : pk (n - 1) rest
-		| otherwise = pa : pk 2 rest
-
-paToInt :: [String] -> Double
-paToInt ("ni'u" : pas) = - (pti $ reverse $ processKIhO pas)
-paToInt pas = pti $ reverse $ processKIhO pas
-
-pti :: [String] -> Double
-pti [] = 0
-pti (p : rest) = fromJust (lookup' p mezopaliste) + 10 * pti rest
-
-lookup' :: Eq a => a -> [([a], b)] -> Maybe b
-lookup' _ [] = Nothing
-lookup' x ((xs, y) : ys)
-	| x `elem` xs = Just y
-	| otherwise = lookup' x ys
+readNumber = Number . mezopatcidu . map (\(_, p, _) -> p)
 
 readSumtiTail :: P.SumtiTail -> (Selbri, Maybe RelativeClause)
 readSumtiTail (P.SelbriRelativeClauses s Nothing) =

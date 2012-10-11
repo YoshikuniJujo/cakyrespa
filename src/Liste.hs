@@ -1,4 +1,6 @@
-module Liste (skaste, mezofaliste, mezoseliste, mezopaliste) where
+module Liste (skaste, mezofaliste, mezoseliste, mezopatcidu) where
+
+import Data.Maybe
 
 skaste :: [(String, (Int, Int, Int))]
 skaste = [
@@ -38,6 +40,29 @@ mezofaliste = [
 	("fo", 4),
 	("fu", 5)
  ]
+
+mezopatcidu :: [String] -> Double
+mezopatcidu ("ni'u" : pas) = - (pti $ reverse $ processKIhO pas)
+mezopatcidu pas = pti $ reverse $ processKIhO pas
+
+pti :: [String] -> Double
+pti [] = 0
+pti (p : rest) = fromJust (lookup' p mezopaliste) + 10 * pti rest
+
+lookup' :: Eq a => a -> [([a], b)] -> Maybe b
+lookup' _ [] = Nothing
+lookup' x ((xs, y) : ys)
+	| x `elem` xs = Just y
+	| otherwise = lookup' x ys
+
+processKIhO :: [String] -> [String]
+processKIhO = reverse . pk 3 . reverse
+	where
+	pk _ [] = []
+	pk n ("ki'o" : rest) = replicate n "no" ++ pk 3 rest
+	pk n (pa : rest)
+		| n > 0 = pa : pk (n - 1) rest
+		| otherwise = pa : pk 2 rest
 
 mezopaliste :: [([String], Double)]
 mezopaliste = [
