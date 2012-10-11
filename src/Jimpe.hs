@@ -219,17 +219,32 @@ rejgau terms args = do
 			return $ REJGAUSETAICAK fp
 		(ZOI fp, LA (Left "syvygyd")) ->
 			return $ REJGAUSETAISVG fp
+		(ZOI fp, LA (Left "lojban")) ->
+			return $ REJGAUSETAIJBO fp
 		_ -> return $ SRERA $ "rejgau: " ++ show setai
 
 tcidu terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
-	sumti <- lookup (FA 2) terms
-	fps <- apply args sumti $ \smt -> case smt of
-		LA (Right (ME fps)) -> return fps
-		LAhE fps -> return fps
-		_ -> fail "tcidu: bad"
-	apply args fps $ \smt -> case smt of
-		ZOI fp -> return $ TCIDU fp
+	setai <- lookup (BAI 2 "tai") terms
+	apply args setai $ \st -> case st of
+		(LA (Right (Brivla "cakyrespa"))) -> do
+			sumti <- lookup (FA 2) terms
+			fps <- apply args sumti $ \smt -> case smt of
+				LA (Right (ME fps)) -> return fps
+				LAhE fps -> return fps
+				_ -> fail "tcidu: bad"
+			apply args fps $ \smt -> case smt of
+				ZOI fp -> return $ TCIDU fp
+				_ -> fail "tcidu: bad"
+		(LA (Left "lojban")) -> do
+			sumti <- lookup (FA 2) terms
+			fps <- apply args sumti $ \smt -> case smt of
+				LA (Right (ME fps)) -> return fps
+				LAhE fps -> return fps
+				_ -> fail "tcidu: bad"
+			apply args fps $ \smt -> case smt of
+				ZOI fp -> return $ TCIDUSETAIJBO fp
+				_ -> fail "tcidu: bad"
 		_ -> fail "tcidu: bad"
 
 napilno terms _ = do

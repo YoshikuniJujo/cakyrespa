@@ -51,6 +51,8 @@ minde _ t _ (REJGAUSETAISVG fp) = do
 	svg <- getSVG t
 	writeFile fp $ showSVG w h svg
 	return True
+minde _ _ _ (REJGAUSETAIJBO _) = return True
+minde _ _ _ (TCIDUSETAIJBO _) = return True
 minde _ _ _ COhO = return False
 minde f t vanbi (MIDYSTE cl) = mapWhile (minde f t vanbi) cl
 minde f _ _ (SRERA str) = do

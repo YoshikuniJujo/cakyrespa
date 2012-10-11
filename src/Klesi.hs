@@ -19,6 +19,7 @@ data Minde
 	| CISNI Double
 	| XRUTI
 	| MORJI String ([Sumti] -> Minde)	| GASNU String [Sumti]
+	| REJGAUSETAIJBO FilePath		| TCIDUSETAIJBO FilePath
 	| REJGAUSETAICAK FilePath		| TCIDU FilePath
 	| REJGAUSETAISVG FilePath
 	| COhO
