@@ -19,7 +19,7 @@ parse = either (ParseError . show) (process 1) . P.parse
 
 process :: Int -> P.Text -> Text
 process n s = processSE $ case process' n s of
-	Bridi selbri terms -> Bridi selbri (processCEhU n terms)
+	Bridi selbri terms -> Bridi selbri $ snd $ processCEhU n terms
 	r -> r
 
 processSE :: Text -> Text
@@ -31,36 +31,30 @@ processSE l = l
 
 pCEhU :: Sumti -> (Int, Int -> Sumti)
 pCEhU CEhUPre = (1, CEhU)
-pCEhU (LO s (Just (POI (Bridi (ME sumti) ss)))) = let (b, ce'u) = pCEhU sumti in
-	(b, \n -> LO s $ Just $ POI $ Bridi (ME $ ce'u n) ss)
-pCEhU (LO (BE selbri sumti) Nothing) = let (b, ce'u) = pCEhU sumti in
-	(b, \n -> LO (BE selbri $ ce'u n) Nothing)
-pCEhU (SFIhO modal sumti) = let (b, ce'u) = pCEhU sumti in
-	(b, SFIhO modal . ce'u)
-pCEhU (GOI sumti1 sumti2) = let
-	(b1, ce'u1) = pCEhU sumti1
-	(b2, ce'u2) = pCEhU sumti2 in
-	(b1 + b2, \n -> GOI (ce'u1 n) (ce'u2 $ b1 + n))
-pCEhU (LA (Right (ME sumti))) = let (b, ce'u) = pCEhU sumti in
-	(b, LA . Right . ME . ce'u)
-pCEhU (Relative sumti r) = let (b, ce'u) = pCEhU sumti in
-	(b, \n -> Relative (ce'u n) r)
-pCEhU (LAhE sumti) = let (b, ce'u) = pCEhU sumti in
-	(b, LAhE . ce'u)
+pCEhU (LO selbri (Just (POI (Bridi (ME sumti) ss)))) = let (b, s) = pCEhU sumti in
+	(b, \n -> LO selbri $ Just $ POI $ Bridi (ME $ s n) ss)
+pCEhU (LO (BE selbri sumti) Nothing) = let (b, s) = pCEhU sumti in
+	(b, \n -> LO (BE selbri $ s n) Nothing)
+pCEhU (SFIhO modal sumti) =
+	let (b, s) = pCEhU sumti in (b, SFIhO modal . s)
+pCEhU (GOI sumti1 sumti2) =
+	let (b1, s1) = pCEhU sumti1; (b2, s2) = pCEhU sumti2 in
+		(b1 + b2, \n -> GOI (s1 n) (s2 $ b1 + n))
+pCEhU (LA (Right (ME sumti))) =
+	let (b, s) = pCEhU sumti in (b, LA . Right . ME . s)
+pCEhU (Relative sumti r) = let (b, s) = pCEhU sumti in (b, flip Relative r . s)
+pCEhU (LAhE sumti) = let (b, s) = pCEhU sumti in (b, LAhE . s)
 pCEhU sumti = (0, const sumti)
 
-processCEhU :: Int -> [(Tag, Sumti)] -> [(Tag, Sumti)]
-processCEhU _ [] = []
-processCEhU n ((t, sumti) : rest) = let (b, ce'u) = pCEhU sumti in
-	(t, ce'u n) : processCEhU (n + b) rest
+processCEhU :: Int -> [(Tag, Sumti)] -> (Int, [(Tag, Sumti)])
+processCEhU n [] = (n - 1, [])
+processCEhU n ((t, sumti) : rest) = (n', (t, ce'u n) : terms')
+	where
+	(b, ce'u) = pCEhU sumti
+	(n', terms') = processCEhU (n + b) rest
 
 countc :: Int -> P.Text -> Int
-countc n = countCEhU 0 . (\(Bridi _ s) -> s) . process' n
-
-countCEhU :: Int -> [(Tag, Sumti)] -> Int
-countCEhU n [] = n
-countCEhU n ((_, sumti) : rest) = let (b, _) = pCEhU sumti in
-	countCEhU (n + b) rest
+countc n = fst . processCEhU 1 . (\(Bridi _ s) -> s) . process' n
 
 flipTag :: Int -> Tag -> Tag
 flipTag n (FA f)
