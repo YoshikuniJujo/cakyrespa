@@ -18,7 +18,7 @@ parse :: String -> Text
 parse = either (ParseError . show) (snd . process 1) . P.parse
 
 process :: Int -> P.Text -> (Int, Text)
-process n s = second processSE $ process' n s
+process n s = second processSE $ proc n s
 
 processSE :: Text -> Text
 processSE (Bridi (NA (SE n selbri)) ss) = processSE $
@@ -26,6 +26,76 @@ processSE (Bridi (NA (SE n selbri)) ss) = processSE $
 processSE (Bridi (SE n selbri) ss) = processSE $
 	Bridi selbri $ map (first $ flipTag n) ss
 processSE l = l
+
+flipTag :: Int -> Tag -> Tag
+flipTag n (FA f)
+	| f == 1 = FA n
+	| f == n = FA 1
+flipTag _ t = t
+
+proc :: Int -> P.Text -> (Int, Text)
+proc n (P.TopText _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing Nothing
+	Nothing) = (n, Vocative v)
+proc n (P.IText_1 _ _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing) =
+	(n, Vocative v)
+proc n (P.IText_1 _ _ _ fs@(_ : _) Nothing) = (n, Free fs)
+proc n (P.IText_1 _ _ _ _ (Just t)) = process n t
+proc n (P.Prenex ss (_, "zo'u", _) _ t) = (n', Prenex (map readSumti ss) ret)
+	where
+	(n', ret) = process n t
+proc n (P.PrenexSentence ss (_, "zo'u", _) _ t) =
+	(n', Prenex (map readSumti ss) ret)
+	where
+	(n', ret) = process n t
+proc n (P.TermsBridiTail ss _ _ (P.SelbriTailTerms selbri ts _ _)) =
+	(n', Bridi (readSelbri selbri) terms)
+	where
+	(n', terms) = processTagSumti n ss ts
+proc n (P.TermsBridiTail ss _ _ (P.Selbri selbri)) =
+	(n', Bridi (readSelbri selbri) terms)
+	where
+	(n', terms) = processTagSumti n ss []
+proc n (P.TermsBridiTail ss _ _
+	(P.GekSentence
+		(P.STagGik
+			(P.Time _ [((_, tense, _), _, _)] _ _)
+			((_, "gi", _), _, _))
+		t ((_, "gi", _), _, _) u _ _ _)) =
+	(n2, TagGI tense
+		(processSE ret1)
+		(processSE ret2))
+	where
+	(n1, ret1) = process n $ P.TermsBridiTail ss undefined undefined t
+	(n2, ret2) = process (n1 + 1)  $ P.TermsBridiTail ss undefined undefined u
+proc n (P.GekSentence
+	(P.STagGik
+		(P.Time _ [((_, tense, _), _, _)] _ _)
+		((_, "gi", _), _, _))
+	t ((_, "gi", _), _, _) u _ _ _) =
+	(n, TagGI tense
+		(processSE $ snd $ process n t)
+		(processSE $ snd $ process n u))
+proc n (P.Selbri selbri) = (n, Bridi (readSelbri selbri) [])
+proc n (P.SelbriTailTerms selbri ts _ _) =
+	(n', Bridi (readSelbri selbri) terms)
+	where
+	(n', terms) = processTagSumti n [] ts
+proc n t = (n, UnknownText $ "proc: " ++ show t)
+
+processTagSumti :: Int -> [P.Sumti] -> [P.Sumti] -> (Int, [(Tag, Sumti)])
+processTagSumti n = curry $ processCEhU n . uncurry pTagSumti
+	where
+	pTagSumti s t = let
+		(n', e, r) = readTagSumti 1 [] [] s
+		(_, _, r') = readTagSumti (if n' > 1 then n' else 2) e [] t in
+		r ++ r'
+
+processCEhU :: Int -> [(Tag, Sumti)] -> (Int, [(Tag, Sumti)])
+processCEhU n [] = (n - 1, [])
+processCEhU n ((t, sumti) : rest) = (n', (t, ce'u n) : terms')
+	where
+	(b, ce'u) = pCEhU sumti
+	(n', terms') = processCEhU (n + b) rest
 
 pCEhU :: Sumti -> (Int, Int -> Sumti)
 pCEhU CEhUPre = (1, CEhU)
@@ -43,73 +113,6 @@ pCEhU (LA (Right (ME sumti))) =
 pCEhU (Relative sumti r) = let (b, s) = pCEhU sumti in (b, flip Relative r . s)
 pCEhU (LAhE sumti) = let (b, s) = pCEhU sumti in (b, LAhE . s)
 pCEhU sumti = (0, const sumti)
-
-processCEhU :: Int -> [(Tag, Sumti)] -> (Int, [(Tag, Sumti)])
-processCEhU n [] = (n - 1, [])
-processCEhU n ((t, sumti) : rest) = (n', (t, ce'u n) : terms')
-	where
-	(b, ce'u) = pCEhU sumti
-	(n', terms') = processCEhU (n + b) rest
-
-flipTag :: Int -> Tag -> Tag
-flipTag n (FA f)
-	| f == 1 = FA n
-	| f == n = FA 1
-flipTag _ t = t
-
-process' :: Int -> P.Text -> (Int, Text)
-process' n (P.TopText _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing Nothing
-	Nothing) = (n, Vocative v)
-process' n (P.IText_1 _ _ _ [P.VocativeSumti [(_, v, _)] _ _] Nothing) =
-	(n, Vocative v)
-process' n (P.IText_1 _ _ _ fs@(_ : _) Nothing) = (n, Free fs)
-process' n (P.IText_1 _ _ _ _ (Just t)) = process n t
-process' n (P.Prenex ss (_, "zo'u", _) _ t) = (n', Prenex (map readSumti ss) ret)
-	where
-	(n', ret) = process n t
-process' n (P.PrenexSentence ss (_, "zo'u", _) _ t) =
-	(n', Prenex (map readSumti ss) ret)
-	where
-	(n', ret) = process n t
-process' n (P.TermsBridiTail ss _ _ (P.SelbriTailTerms selbri ts _ _)) =
-	(n', Bridi (readSelbri selbri) terms)
-	where
-	(n', terms) = processCEhU n $ processTagSumti ss ts
-process' n (P.TermsBridiTail ss _ _ (P.Selbri selbri)) =
-	(n', Bridi (readSelbri selbri) terms)
-	where
-	(n', terms) = processCEhU n $ processTagSumti ss []
-process' n (P.TermsBridiTail ss _ _
-	(P.GekSentence
-		(P.STagGik
-			(P.Time _ [((_, tense, _), _, _)] _ _)
-			((_, "gi", _), _, _))
-		t ((_, "gi", _), _, _) u _ _ _)) =
-	(n2, TagGI tense
-		(processSE ret1)
-		(processSE ret2))
-	where
-	(n1, ret1) = process n $ P.TermsBridiTail ss undefined undefined t
-	(n2, ret2) = process (n1 + 1)  $ P.TermsBridiTail ss undefined undefined u
-process' n (P.GekSentence
-	(P.STagGik
-		(P.Time _ [((_, tense, _), _, _)] _ _)
-		((_, "gi", _), _, _))
-	t ((_, "gi", _), _, _) u _ _ _) =
-	(n, TagGI tense
-		(processSE $ snd $ process n t)
-		(processSE $ snd $ process n u))
-process' n (P.Selbri selbri) = (n, Bridi (readSelbri selbri) [])
-process' n (P.SelbriTailTerms selbri ts _ _) =
-	(n', Bridi (readSelbri selbri) terms)
-	where
-	(n', terms) = processCEhU n $ processTagSumti [] ts
-process' n t = (n, UnknownText $ "process: " ++ show t)
-
-processTagSumti :: [P.Sumti] -> [P.Sumti] -> [(Tag, Sumti)]
-processTagSumti s t = let
-	(n, e, r) = readTagSumti 1 [] [] s
-	(_, _, r') = readTagSumti (if n > 1 then n else 2) e [] t in r ++ r'
 
 readTagSumti :: Int -> [Int] -> [(Tag, Sumti)] -> [P.Sumti]
 	-> (Int, [Int], [(Tag, Sumti)])
