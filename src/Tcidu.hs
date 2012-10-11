@@ -36,13 +36,13 @@ pCEhU (LO s (Just (POI (Bridi (ME sumti) ss)))) = let (b, ce'u) = pCEhU sumti in
 pCEhU (LO (BE selbri sumti) Nothing) = let (b, ce'u) = pCEhU sumti in
 	(b, \n -> LO (BE selbri $ ce'u n) Nothing)
 pCEhU (SFIhO modal sumti) = let (b, ce'u) = pCEhU sumti in
-	(b, \n -> SFIhO modal $ ce'u n)
+	(b, SFIhO modal . ce'u)
 pCEhU (GOI sumti1 sumti2) = let
 	(b1, ce'u1) = pCEhU sumti1
 	(b2, ce'u2) = pCEhU sumti2 in
 	(b1 + b2, \n -> GOI (ce'u1 n) (ce'u2 $ b1 + n))
 pCEhU (LA (Right (ME sumti))) = let (b, ce'u) = pCEhU sumti in
-	(b, \n -> LA $ Right $ ME $ ce'u n)
+	(b, LA . Right . ME . ce'u)
 pCEhU (Relative sumti r) = let (b, ce'u) = pCEhU sumti in
 	(b, \n -> Relative (ce'u n) r)
 pCEhU (LAhE sumti) = let (b, ce'u) = pCEhU sumti in
