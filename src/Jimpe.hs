@@ -210,7 +210,7 @@ morji terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
 	GOI lerfu duhu <- lookup (FA 2) terms
 	apply2 args lerfu duhu $ \ler d -> case (ler, d) of
-		(LerfuString cmene, LO (DUhU fasnu) _) ->
+		(LerfuString cmene, LO (NU fasnu) _) ->
 			return $ MORJI cmene $ jmi fasnu
 		_ -> return $ SRERA $ "morji: " ++ show terms
 
