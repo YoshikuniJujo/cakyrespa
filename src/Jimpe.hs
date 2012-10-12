@@ -142,7 +142,7 @@ penbi :: [Sumti] -> Text -> Maybe Minde
 penbi _ (Bridi (Brivla skari) []) = pebyska skari
 penbi args (Bridi (Brivla "penbi") [(FA 2, skari)]) = applyLO args skari pebyska
 penbi args (Bridi (ME skari) []) = applyLO args skari pebyska
-penbi args (Bridi (Brivla "cisni") [(FA 1, cisnysu'i)]) =
+penbi args (Bridi (Brivla "cisni") [(FA 2, cisnysu'i)]) =
 	apply args cisnysu'i $ \cs -> case cs of
 		LI (Number cisnyna'u) -> return $ PEBYCISNI cisnyna'u
 		_ -> fail "bad"
