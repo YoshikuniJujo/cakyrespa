@@ -16,7 +16,7 @@ data Minde
 	| BURSKA Int Int Int			| FLOSKA Int Int Int
 	| NAPILNOLOPENBI			| PILNOLOPENBI
 	| NAVISKA				| VISKA
-	| CISNI Double
+	| CISNI Double				| CISNYGAUFOLDI Double Double
 	| XRUTI
 	| MORJI String ([Sumti] -> Minde)	| GASNU String [Sumti]
 	| REJGAUSETAIJBO FilePath		| TCIDUSETAIJBO FilePath

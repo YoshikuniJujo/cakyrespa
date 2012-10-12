@@ -41,6 +41,7 @@ midste = [
 	("galfi", galfi),
 	("pilno", pilno),
 	("cisni", cisni),
+	("cisnygau", cisnygau),
 	("viska", viska),
 	("rapli", rapli),
 	("xruti", xruti),
@@ -61,8 +62,8 @@ apply _ sumti cmd = cmd sumti
 apply2 :: Monad m => [Sumti] -> Sumti -> Sumti -> (Sumti -> Sumti -> m a) -> m a
 apply2 args s1 s2 cmd = apply args s2 =<< apply args s1 (return . cmd)
 
-klama, crakla, rixykla, carna, clugau, galfi, pilno, cisni, viska, rapli, xruti,
-	morji, gasnu, rejgau, tcidu, napilno, naviska :: Midytcidu
+klama, crakla, rixykla, carna, clugau, galfi, pilno, cisni, cisnygau, viska,
+	rapli, xruti, morji, gasnu, rejgau, tcidu, napilno, naviska :: Midytcidu
 
 klama terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
@@ -175,11 +176,19 @@ be2poi (LO (BE selbri sumti) Nothing) =
 be2poi sumti = sumti
 
 cisni terms args = do
-	KOhA "ko" <- lookup (FA 2) terms
-	csn <- lookup (FA 1) terms
+	KOhA "ko" <- lookup (FA 1) terms
+	csn <- lookup (FA 2) terms
 	apply args csn $ \c -> case c of
 		LI (Number n) -> return $ CISNI n
 		_ -> return $ SRERA $ "cisni: " ++ show terms
+
+cisnygau terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	LO (Brivla "foldi") _ <- lookup (FA 2) terms
+	csn <- lookup (FA 3) terms
+	apply args csn $ \sk -> case sk of
+		LI (JOhI [Number x, Number y]) -> return $ CISNYGAUFOLDI x y
+		_ -> return $ SRERA $ show terms ++ " " ++ show args
 
 viska terms _ = do
 	KOhA "ko" <- lookup (FA 2) terms

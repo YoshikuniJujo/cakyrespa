@@ -3,7 +3,7 @@ module Minde (minde) where
 import Klesi(Minde(..), Sumti)
 
 import Text.XML.YJSVG(showSVG)
-import Graphics.UI.GLUT.Turtle(
+import Graphics.UI.GLUT.Turtle(setFieldSize,
 	Field, outputString,
 	Turtle, runInputs, inputs, getSVG,
 	goto, forward, backward, left, right, beginfill, endfill, undo,
@@ -39,6 +39,7 @@ minde _ t _ PILNOLOPENBI = pendown t >> return True
 minde _ t _ NAVISKA = hideturtle t >> return True
 minde _ t _ VISKA = showturtle t >> return True
 minde _ t _ (CISNI s) = shapesize t s s >> return True
+minde f _ _ (CISNYGAUFOLDI w h) = setFieldSize f w h >> return True
 minde _ t _ XRUTI = undo t >> return True
 minde _ _ vanbi (MORJI cmene fasnu) = vabyciha cmene fasnu vanbi >> return True
 minde f t vanbi (GASNU cmene sumti) = vabytcidu cmene vanbi >>=
