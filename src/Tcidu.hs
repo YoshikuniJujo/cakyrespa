@@ -47,7 +47,7 @@ proc n (P.IText_1 _ _ _ _ (Just t)) = proc n t
 proc n (P.IText_1 _ _ _ [P.VocativeSumti [(_, v, _)] _ _] _) = (n, Vocative v)
 proc n (P.IText_1 _ _ _ fs@(_ : _) _) = (n, Free fs)
 proc n (P.StatementI ptext iptexts) =
-	second MultiText $ some proc n $ ptext : ptexts
+	(0, MultiText $ map snd $ map (proc 1) $ ptext : ptexts)
 	where
 	ptexts = catMaybes $ map (\(_, _, t) -> t) iptexts
 proc n (P.Selbri selbri) = (n, Bridi (readSelbri selbri) [])
