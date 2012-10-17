@@ -7,7 +7,7 @@ import Klesi(Text(ParseError), Minde(REJGAUSETAIJBO, TCIDUSETAIJBO))
 
 import Graphics.UI.GLUT(mainLoop)
 import Graphics.UI.GLUT.Turtle(
-	initialize, openField, prompt, oninputtext,
+	initialize, openField, openConsole, setConsole, prompt, oninputtext,
 	newTurtle, notundo, shape, shapesize)	
 import Data.IORef(newIORef, readIORef)
 import Data.IORef.Tools(atomicModifyIORef_)
@@ -19,6 +19,8 @@ main :: IO ()
 main = do
 	_args <- initialize
 	f <- openField "cakyrespa" 640 480
+	c <- openConsole "console" 640 480
+	setConsole f c
 	t <- newTurtle f
 	env <- newIORef []
 	cmds <- newIORef []
