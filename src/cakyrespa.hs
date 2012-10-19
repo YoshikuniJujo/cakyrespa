@@ -7,7 +7,8 @@ import Klesi(Text(ParseError), Minde(REJGAUSETAIJBO, TCIDUSETAIJBO))
 
 import Graphics.UI.GLUT(mainLoop)
 import Graphics.UI.GLUT.Turtle(
-	initialize, openField, openConsole, setConsole, prompt, oninputtext,
+	initialize, openField, openConsole, setConsole, consolePrompt,
+	oncommand,
 	newTurtle, notundo, shape, shapesize)	
 import Data.IORef(newIORef, readIORef)
 import Data.IORef.Tools(atomicModifyIORef_)
@@ -24,20 +25,20 @@ main = do
 	t <- newTurtle f
 	env <- newIORef []
 	cmds <- newIORef []
-	prompt f ".i "
+	consolePrompt c ".i "
 	shape t "turtle"
 	shapesize t 3 3
 	notundo t
-	oninputtext f $ \cmd -> do
+	oncommand f $ \cmd -> do
 		let	p = parse cmd
 			j = jimpe p
 		case (p, j) of
 			(_, REJGAUSETAIJBO fp) ->
 				writeFile fp . unlines . reverse =<< readIORef cmds
 			(_, TCIDUSETAIJBO fp) ->
-				readFile fp >>= minde f t env . jimpe . parse
+				readFile fp >>= minde f c t env . jimpe . parse
 					>> return ()
 			(ParseError _, _) -> return ()
 			_ -> atomicModifyIORef_ cmds ((".i" ++ cmd) :)
-		minde f t env j
+		minde f c t env j
 	mainLoop
