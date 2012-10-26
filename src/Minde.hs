@@ -4,7 +4,7 @@ import Klesi(Minde(..), Sumti)
 
 import Text.XML.YJSVG(showSVG)
 import Graphics.UI.GLUT.Turtle(setFieldSize, Console,
-	Field, consoleOutput,
+	Field, consoleOutput, clear,
 	Turtle, runInputs, inputs, getSVG,
 	goto, forward, backward, left, right, beginfill, endfill, undo,
 	penup, pendown, hideturtle, showturtle, shapesize,
@@ -40,6 +40,7 @@ minde _ _ t _ NAVISKA = hideturtle t >> return True
 minde _ _ t _ VISKA = showturtle t >> return True
 minde _ _ t _ (CISNI s) = shapesize t s s >> return True
 minde f _ _ _ (CISNYGAUFOLDI w h) = setFieldSize f w h >> return True
+minde _ _ t _ VIMCULOPIXRA = clear t >> return True
 minde _ _ t _ XRUTI = undo t >> return True
 minde _ _ _ vanbi (MORJI cmene fasnu) = vabyciha cmene fasnu vanbi >> return True
 minde f c t vanbi (GASNU cmene sumti) = vabytcidu cmene vanbi >>=

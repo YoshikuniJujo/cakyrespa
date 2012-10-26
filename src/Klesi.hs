@@ -18,6 +18,7 @@ data Minde
 	| NAVISKA				| VISKA
 	| CISNI Double				| CISNYGAUFOLDI Double Double
 	| XRUTI
+	| VIMCULOPIXRA
 	| MORJI String ([Sumti] -> Minde)	| GASNU String [Sumti]
 	| REJGAUSETAIJBO FilePath		| TCIDUSETAIJBO FilePath
 	| REJGAUSETAICAK FilePath		| TCIDU FilePath

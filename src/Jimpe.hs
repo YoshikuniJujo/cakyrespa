@@ -27,6 +27,7 @@ jmi (TagGI "ba" pavbri relbri) args =
 	MIDYSTE [jmi pavbri args, jmi relbri args]
 jmi (MultiText texts) args = MIDYSTE $ map (($ args) . jmi) texts
 jmi (Vocative "co'o") _ = COhO
+jmi (Vocative "fe'o") _ = COhO
 jmi l _ = SRERA $ show l
 
 type Midytcidu = [(Tag, Sumti)] -> [Sumti] -> Maybe Minde
@@ -44,6 +45,7 @@ midste = [
 	("cisnygau", cisnygau),
 	("viska", viska),
 	("rapli", rapli),
+	("vimcu", vimcu),
 	("xruti", xruti),
 	("morji", morji),
 	("gasnu", gasnu),
@@ -64,6 +66,13 @@ apply2 args s1 s2 cmd = apply args s2 =<< apply args s1 (return . cmd)
 
 klama, crakla, rixykla, carna, clugau, galfi, pilno, cisni, cisnygau, viska,
 	rapli, xruti, morji, gasnu, rejgau, tcidu, napilno, naviska :: Midytcidu
+
+vimcu terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	selgau <- lookup (FA 2) terms
+	apply args selgau $ \sg -> case sg of
+		LO (Brivla "pixra") _ -> return VIMCULOPIXRA
+		_ -> return $ SRERA $ show terms ++ " " ++ show args
 
 klama terms args = do
 	KOhA "ko" <- lookup (FA 1) terms
