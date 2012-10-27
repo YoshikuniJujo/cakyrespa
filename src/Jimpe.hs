@@ -28,6 +28,7 @@ jmi (TagGI "ba" pavbri relbri) args =
 jmi (MultiText texts) args = MIDYSTE $ map (($ args) . jmi) texts
 jmi (Vocative "co'o") _ = COhO
 jmi (Vocative "fe'o") _ = COhO
+jmi FAhO _ = COhO
 jmi l _ = SRERA $ show l
 
 type Midytcidu = [(Tag, Sumti)] -> [Sumti] -> Maybe Minde

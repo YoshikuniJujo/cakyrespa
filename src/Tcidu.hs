@@ -40,6 +40,8 @@ some f x0 (y : ys) = let
 	(x', z : zs)
 
 proc :: Int -> P.Text -> (Int, Text)
+proc n (P.TopText [] (Right Nothing) [] Nothing Nothing (Just ([], "fa'o"))) =
+	(0, FAhO)
 proc n (P.TopText _ _ _ _ (Just t) _) = proc n t
 proc n (P.TopText _ _ [P.VocativeSumti [(_, v, _)] _ _] _ _ _) = (n, Vocative v)
 proc n (P.TopText _ _ fs@(_ : _) _ _ _) = (n, Free fs)

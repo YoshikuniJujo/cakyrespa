@@ -34,6 +34,7 @@ data Text
 	| Vocative String
 	| Free [Free]
 	| MultiText [Text]
+	| FAhO
 	| UnknownText String
 	| ParseError String
 	deriving (Show, Eq)
