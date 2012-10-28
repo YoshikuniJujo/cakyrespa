@@ -39,6 +39,7 @@ midste = [
 	("crakla", crakla),
 	("rixykla", rixykla),
 	("carna", carna),
+	("xrukla", xrukla),
 	("clugau", clugau),
 	("galfi", galfi),
 	("pilno", pilno),
@@ -66,7 +67,15 @@ apply2 :: Monad m => [Sumti] -> Sumti -> Sumti -> (Sumti -> Sumti -> m a) -> m a
 apply2 args s1 s2 cmd = apply args s2 =<< apply args s1 (return . cmd)
 
 klama, crakla, rixykla, carna, clugau, galfi, pilno, cisni, cisnygau, viska,
-	rapli, xruti, morji, gasnu, rejgau, tcidu, napilno, naviska :: Midytcidu
+	rapli, xruti, morji, gasnu, rejgau, tcidu, napilno, naviska, vimcu,
+	xrukla :: Midytcidu
+
+xrukla terms args = do
+	KOhA "ko" <- lookup (FA 1) terms
+	selxrukla <- lookup (FA 2) terms
+	apply args selxrukla $ \sxk -> case sxk of
+		LO (Brivla "krasi") _ -> return XRUKLALOKRASI
+		_ -> return $ SRERA $ show terms ++ " " ++ show args
 
 vimcu terms args = do
 	KOhA "ko" <- lookup (FA 1) terms

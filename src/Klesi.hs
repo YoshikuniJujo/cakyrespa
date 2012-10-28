@@ -11,6 +11,7 @@ data Minde
 	= KLAMA Double Double
 	| CRAKLA Double				| RIXYKLA Double
 	| ZUNLE Double				| PRITU Double
+	| XRUKLALOKRASI
 	| COhACLUGAU				| COhUCLUGAU
 	| PEBYCISNI Double			| PEBYSKA Int Int Int
 	| BURSKA Int Int Int			| FLOSKA Int Int Int
