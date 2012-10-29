@@ -15,6 +15,7 @@ jimpe :: Text -> Minde
 jimpe = flip jmi []
 
 jmi :: Text -> [Sumti] -> Minde
+jmi (Bridi (Brivla "sisti") [(FA 1, KOhA "ko")]) _ = COhO
 jmi t@(Bridi (Brivla brivla) terms) args = fromMaybe (SRERA $ show t) $
 	lookup brivla midste >>= \mid -> mid terms args
 jmi t@(Bridi (NA (Brivla brivla)) terms) args = fromMaybe (SRERA $ show t) $
